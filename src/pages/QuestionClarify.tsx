@@ -1,7 +1,8 @@
 // src/pages/QuestionClarify.tsx
 // 问题澄清页面（AI调试）
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { createApiUrl, API_ENDPOINTS } from '../config/api';
 import { 
   Card, 
   Row, 
@@ -70,7 +71,7 @@ function QuestionClarify() {
   // 获取用户列表的函数
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.USERS));
       const data = await response.json();
       setUsers(data);
     } catch (error) {
@@ -81,7 +82,7 @@ function QuestionClarify() {
   // 获取AI模型列表的函数
   const fetchModels = async () => {
     try {
-      const response = await fetch('/api/models');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.MODELS));
       const data = await response.json();
       setModels(data);
     } catch (error) {
@@ -130,7 +131,7 @@ function QuestionClarify() {
       console.log('原始提示词:', systemPrompt);
       console.log('处理后提示词:', processedPrompt);
       
-      const response = await fetch('/api/clarify/start', {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.CLARIFY_START), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +211,7 @@ function QuestionClarify() {
       
       console.log('继续对话 - 发送的对话历史:', fullConversationHistory);
       
-      const response = await fetch('/api/clarify/continue', {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.CLARIFY_CONTINUE), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ function QuestionClarify() {
     }
 
     try {
-      const response = await fetch('/api/clarify/add-tags', {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.CLARIFY_ADD_TAGS), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -606,6 +607,22 @@ function QuestionClarify() {
               size="small"
             >
               <Space direction="vertical" style={{ width: '100%' }}>
+                
+                {/* 状态指示器 */}
+                <div style={{ 
+                  padding: 8, 
+                  backgroundColor: needsMoreClarification ? '#fff7e6' : '#f6ffed', 
+                  border: `1px solid ${needsMoreClarification ? '#ffd591' : '#b7eb8f'}`,
+                  borderRadius: 4,
+                  textAlign: 'center'
+                }}>
+                  <span style={{ 
+                    color: needsMoreClarification ? '#fa8c16' : '#52c41a',
+                    fontWeight: 'bold'
+                  }}>
+                    {needsMoreClarification ? '🔄 还需要继续追问' : '✅ 问题已澄清完成'}
+                  </span>
+                </div>
                 
                 {/* 第一个区域：AI追问历史 */}
                 <div>

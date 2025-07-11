@@ -1,8 +1,8 @@
 // src/pages/Divination.tsx
 // 核心占卜页面 - 主要功能是进行易经占卜
 
-import React, { useState, useEffect } from 'react';
-import { Card, Select, Button, Typography, Row, Col, message, Modal, Input, Form, Space, Tag, Divider } from 'antd';
+import { useState, useEffect } from 'react';
+import { Card, Select, Button, Typography, Row, Col, message, Modal, Input, Form, Space, Tag } from 'antd';
 import { EditOutlined, CopyOutlined } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;

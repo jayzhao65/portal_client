@@ -1,7 +1,7 @@
 // src/pages/UserManagement.tsx
 // 用户管理页面
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Table, 
   Button, 

@@ -1,7 +1,7 @@
 // src/pages/GuaYaoManagement.tsx
 // 卦和爻管理页面
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Table, 
   Button, 

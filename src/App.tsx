@@ -1,7 +1,6 @@
 // src/App.tsx
 // 主应用组件，包含路由和布局
 
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Layout, Menu, Typography } from 'antd';
 import { 
