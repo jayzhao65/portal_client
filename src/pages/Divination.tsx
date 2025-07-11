@@ -306,10 +306,10 @@ function Divination() {
       if (result.ben_gua_binary) {
         console.log(`\n--- 第1步：查询本卦信息 ---`);
         console.log(`本卦二进制码: ${result.ben_gua_binary}`);
-        console.log(`请求URL: /api/guas/search/${result.ben_gua_binary}`);
+        console.log(`请求URL: ${createApiUrl(API_ENDPOINTS.GUA_SEARCH(result.ben_gua_binary))}`);
         
         try {
-          const response = await fetch(`/api/guas/search/${result.ben_gua_binary}`);
+          const response = await fetch(createApiUrl(API_ENDPOINTS.GUA_SEARCH(result.ben_gua_binary)));
           if (response.ok) {
             benGuaData = await response.json();
             console.log('✅ 本卦信息获取成功:', benGuaData);
@@ -336,10 +336,10 @@ function Divination() {
       if (result.zhi_gua_binary) {
         console.log(`\n--- 第2步：查询之卦信息 ---`);
         console.log(`之卦二进制码: ${result.zhi_gua_binary}`);
-        console.log(`请求URL: /api/guas/search/${result.zhi_gua_binary}`);
+        console.log(`请求URL: ${createApiUrl(API_ENDPOINTS.GUA_SEARCH(result.zhi_gua_binary))}`);
         
         try {
-          const response = await fetch(`/api/guas/search/${result.zhi_gua_binary}`);
+          const response = await fetch(createApiUrl(API_ENDPOINTS.GUA_SEARCH(result.zhi_gua_binary)));
           if (response.ok) {
             zhiGuaData = await response.json();
             console.log('✅ 之卦信息获取成功:', zhiGuaData);
@@ -394,7 +394,7 @@ function Divination() {
               continue;
             }
             
-            const requestUrl = `/api/yaos/search/${guaPosition}/${yaoToRead.position}`;
+            const requestUrl = createApiUrl(API_ENDPOINTS.YAO_SEARCH(guaPosition, yaoToRead.position));
             console.log(`请求URL: ${requestUrl}`);
             
             // 查询单个爻信息
@@ -479,8 +479,8 @@ function Divination() {
   const handleEditSave = async (values: any) => {
     try {
       const url = editingType === 'gua' 
-        ? `/api/guas/${editingData.id}`
-        : `/api/yaos/${editingData.id}`;
+        ? createApiUrl(API_ENDPOINTS.GUA_BY_ID(editingData.id))
+        : createApiUrl(API_ENDPOINTS.YAO_BY_ID(editingData.id));
       
       const response = await fetch(url, {
         method: 'PUT',

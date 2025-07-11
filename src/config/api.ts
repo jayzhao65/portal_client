@@ -79,8 +79,10 @@ export const API_ENDPOINTS = {
   // 卦和爻相关
   GUAS: '/api/guas',
   GUA_BY_ID: (id: string) => `/api/guas/${id}`,
+  GUA_SEARCH: (binaryCode: string) => `/api/guas/search/${binaryCode}`,
   YAOS: '/api/yaos',
   YAO_BY_ID: (id: string) => `/api/yaos/${id}`,
+  YAO_SEARCH: (guaPosition: number, yaoPosition: number) => `/api/yaos/search/${guaPosition}/${yaoPosition}`,
   YAO_OPTIONS: '/api/yao-options',
   
   // 占卜相关
