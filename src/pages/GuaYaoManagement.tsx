@@ -2,6 +2,7 @@
 // 卦和爻管理页面
 
 import { useState, useEffect } from 'react';
+import { createApiUrl, API_ENDPOINTS } from '../config/api';
 import { 
   Table, 
   Button, 
@@ -52,7 +53,7 @@ function GuaYaoManagement() {
   const fetchGuas = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/guas');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.GUAS));
       const data = await response.json();
       setGuas(data);
     } catch (error) {
@@ -65,7 +66,7 @@ function GuaYaoManagement() {
   const fetchYaos = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/yaos');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.YAOS));
       const data = await response.json();
       setYaos(data);
     } catch (error) {
@@ -126,7 +127,7 @@ function GuaYaoManagement() {
   // 删除
   const handleDelete = async (id: string) => {
     try {
-      const endpoint = activeTab === 'gua' ? `/api/guas/${id}` : `/api/yaos/${id}`;
+      const endpoint = activeTab === 'gua' ? createApiUrl(API_ENDPOINTS.GUA_BY_ID(id)) : createApiUrl(API_ENDPOINTS.YAO_BY_ID(id));
       await fetch(endpoint, { method: 'DELETE' });
       message.success('删除成功');
       if (activeTab === 'gua') {
@@ -155,10 +156,10 @@ function GuaYaoManagement() {
         };
         
         if (editingItem) {
-          endpoint = `/api/guas/${editingItem.id}`;
+          endpoint = createApiUrl(API_ENDPOINTS.GUA_BY_ID(editingItem.id));
           method = 'PUT';
         } else {
-          endpoint = '/api/guas';
+          endpoint = createApiUrl(API_ENDPOINTS.GUAS);
           method = 'POST';
         }
       } else {
@@ -170,10 +171,10 @@ function GuaYaoManagement() {
         };
         
         if (editingItem) {
-          endpoint = `/api/yaos/${editingItem.id}`;
+          endpoint = createApiUrl(API_ENDPOINTS.YAO_BY_ID(editingItem.id));
           method = 'PUT';
         } else {
-          endpoint = '/api/yaos';
+          endpoint = createApiUrl(API_ENDPOINTS.YAOS);
           method = 'POST';
         }
       }

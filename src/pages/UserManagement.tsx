@@ -2,6 +2,7 @@
 // 用户管理页面
 
 import { useState, useEffect } from 'react';
+import { createApiUrl, API_ENDPOINTS } from '../config/api';
 import { 
   Table, 
   Button, 
@@ -37,7 +38,7 @@ function UserManagement() {
     setLoading(true);
     try {
       console.log('开始获取用户列表...');
-      const response = await fetch('/api/users');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.USERS));
       console.log('用户列表响应状态:', response.status);
       
       if (!response.ok) {
@@ -83,7 +84,7 @@ function UserManagement() {
   // 删除用户
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      await fetch(createApiUrl(API_ENDPOINTS.USER_BY_ID(id)), { method: 'DELETE' });
       message.success('删除成功');
       fetchUsers();
     } catch (error) {
@@ -102,7 +103,7 @@ function UserManagement() {
 
       if (editingUser) {
         // 编辑模式
-        await fetch(`/api/users/${editingUser.id}`, {
+        await fetch(createApiUrl(API_ENDPOINTS.USER_BY_ID(editingUser.id)), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)
@@ -110,7 +111,7 @@ function UserManagement() {
         message.success('编辑成功');
       } else {
         // 新增模式
-        await fetch('/api/users', {
+        await fetch(createApiUrl(API_ENDPOINTS.USERS), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)

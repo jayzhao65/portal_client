@@ -2,6 +2,7 @@
 // 核心占卜页面 - 主要功能是进行易经占卜
 
 import { useState, useEffect } from 'react';
+import { createApiUrl, API_ENDPOINTS } from '../config/api';
 import { Card, Select, Button, Typography, Row, Col, message, Modal, Input, Form, Space, Tag } from 'antd';
 import { EditOutlined, CopyOutlined } from '@ant-design/icons';
 
@@ -111,7 +112,7 @@ function Divination() {
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.USERS));
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -129,7 +130,7 @@ function Divination() {
   // 获取爻状态选项
   const fetchYaoOptions = async () => {
     try {
-      const response = await fetch('/api/yao-options');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.YAO_OPTIONS));
       const data = await response.json();
       
       if (data.success) {
@@ -152,7 +153,7 @@ function Divination() {
   // 获取AI模型列表（参考QuestionClarify.tsx的实现）
   const fetchModels = async () => {
     try {
-      const response = await fetch('/api/models');
+      const response = await fetch(createApiUrl(API_ENDPOINTS.MODELS));
       const data = await response.json();
       setModels(data);
     } catch (error) {
@@ -251,7 +252,7 @@ function Divination() {
     
     try {
       // 调用占卜接口
-      const response = await fetch('/api/divine', {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.DIVINE), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -540,7 +541,7 @@ function Divination() {
         question: question
       });
 
-      const response = await fetch('/api/ai-interpretation', {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.AI_INTERPRETATION), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
