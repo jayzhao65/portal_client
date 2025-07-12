@@ -102,11 +102,52 @@ function Divination() {
   // 爻位名称（从下到上）
   const yaoPositionNames = ['初', '二', '三', '四', '五', '上'];
 
+  // ========== 默认提示词设置 ==========
+  const defaultSystemPrompt = `你是一位精通易经的资深大师，拥有深厚的易学功底和丰富的占卜经验。你的任务是根据用户的占卜结果，结合其个人情况，给出准确、深刻、实用的易经解读。
+
+请以专业、温和的语气，为用户提供详细的分析和建议。你的回答应该既有理论依据，又贴近实际生活。`;
+
+  const defaultUserPrompt = `请为用户进行详细的易经占卜解读：
+
+【用户信息】
+用户名：{user_name}
+用户标签：{user_tags}
+咨询问题：{final_question}
+
+【占卜结果】
+格局：{geju}
+格局说明：{geju_prompt}
+
+本卦：{bengua_name}
+本卦含义：{bengua_prompt}
+
+之卦：{zhigua_name}
+之卦含义：{zhigua_prompt}
+
+【需要解读的爻】
+主要爻：{yao1_name}
+爻意：{yao1_prompt}
+
+次要爻：{yao2_name}
+爻意：{yao2_prompt}
+
+【解读要求】
+1. 结合用户的个人标签和问题背景，分析当前的处境
+2. 详细解读本卦和之卦的含义，说明事情的发展趋势
+3. 深入分析需要解读的爻的寓意，指出关键的注意事项
+4. 根据格局给出具体的行动建议和时机把握
+5. 提供积极正面的指导，帮助用户做出明智的决策
+
+请用通俗易懂的语言，让用户能够理解和应用你的解读。`;
+
   // 组件加载时获取数据
   useEffect(() => {
     fetchUsers(); // 获取用户列表
     fetchYaoOptions(); // 获取爻状态选项
     fetchModels(); // 获取AI模型列表
+    // 设置默认的系统提示词和用户提示词
+    setSystemPrompt(defaultSystemPrompt);
+    setUserPrompt(defaultUserPrompt);
   }, []);
 
   // 获取用户列表
