@@ -325,7 +325,7 @@ function QuestionClarify() {
 
   // ========== 渲染界面 ==========
   return (
-    <div style={{ padding: 16, height: '100vh', overflow: 'hidden' }}>
+    <div style={{ padding: 16, minHeight: '100vh' }}>
       {/* 页面标题 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={3} style={{ margin: 0 }}>
@@ -349,7 +349,7 @@ function QuestionClarify() {
       </div>
       
       {/* 上下布局 */}
-      <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         
         {/* ==================== 顶部：配置区 ==================== */}
         <Card 
@@ -478,7 +478,7 @@ function QuestionClarify() {
         </Card>
 
                 {/* ==================== 底部：对话区和解析区 ==================== */}
-        <Row gutter={16} style={{ flex: 1, minHeight: 0 }}>
+        <Row gutter={16} style={{ minHeight: 600 }}>
           
           {/* 对话区（80%宽度） */}
           <Col span={15}>
@@ -504,11 +504,11 @@ function QuestionClarify() {
                   )}
                 </div>
               }
-              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+              style={{ display: 'flex', flexDirection: 'column' }}
               size="small"
             >
               {/* 对话内容区域 */}
-              <div style={{ flex: 1, minHeight: 0, padding: 16, backgroundColor: '#fafafa', overflow: 'auto' }}>
+              <div style={{ minHeight: 400, padding: 16, backgroundColor: '#fafafa' }}>
                 {!isConversationStarted ? (
                   <div style={{ textAlign: 'center', color: '#999', marginTop: 50 }}>
                     请配置上方参数并点击"开始对话"
@@ -603,7 +603,7 @@ function QuestionClarify() {
                   </div>
                 </div>
               }
-              style={{ height: '100%', overflow: 'auto' }}
+              style={{ minHeight: 600 }}
               size="small"
             >
               <Space direction="vertical" style={{ width: '100%' }}>
