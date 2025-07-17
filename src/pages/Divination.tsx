@@ -91,6 +91,7 @@ function Divination() {
   const [systemPrompt, setSystemPrompt] = useState<string>(''); // 系统提示词
   const [userPrompt, setUserPrompt] = useState<string>(''); // 用户提示词（包含占位符）
   const [aiResponse, setAiResponse] = useState<string>(''); // AI回复
+  const [parsedAiResult, setParsedAiResult] = useState<any>(null); // 解析后的JSON结果
   const [isAnalyzing, setIsAnalyzing] = useState(false); // 是否正在分析
   
   // 编辑弹框相关状态
@@ -102,12 +103,48 @@ function Divination() {
   // 爻位名称（从下到上）
   const yaoPositionNames = ['初', '二', '三', '四', '五', '上'];
 
+  // JSON解析函数
+  const parseAIResponse = (response: string) => {
+    try {
+      // 清理响应文本，去除可能的前后缀
+      let cleanResponse = response.trim();
+      
+      // 如果响应包含markdown代码块，提取JSON部分
+      if (cleanResponse.includes('```json')) {
+        const jsonMatch = cleanResponse.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanResponse = jsonMatch[1];
+        }
+      } else if (cleanResponse.includes('```')) {
+        const jsonMatch = cleanResponse.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          cleanResponse = jsonMatch[1];
+        }
+      }
+      
+      // 找到第一个 { 和最后一个 } 来提取JSON
+      const firstBrace = cleanResponse.indexOf('{');
+      const lastBrace = cleanResponse.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleanResponse = cleanResponse.substring(firstBrace, lastBrace + 1);
+      }
+      
+      const parsed = JSON.parse(cleanResponse);
+      return parsed;
+    } catch (error) {
+      console.error('JSON解析失败:', error);
+      console.error('原始响应:', response);
+      return null;
+    }
+  };
+
   // ========== 默认提示词设置 ==========
   const defaultSystemPrompt = `你是一位精通易经的资深大师，拥有深厚的易学功底和丰富的占卜经验。你的任务是根据用户的占卜结果，结合其个人情况，给出准确、深刻、实用的易经解读。
 
-请以专业、温和的语气，为用户提供详细的分析和建议。你的回答应该既有理论依据，又贴近实际生活。`;
+请严格按照要求的JSON格式输出，确保JSON格式正确且完整。`;
 
-  const defaultUserPrompt = `请为用户进行详细的易经占卜解读：
+  const defaultUserPrompt = `请为用户进行详细的易经占卜解读，并严格按照以下JSON格式输出：
 
 【用户信息】
 用户名：{user_name}
@@ -131,14 +168,41 @@ function Divination() {
 次要爻：{yao2_name}
 爻意：{yao2_prompt}
 
-【解读要求】
-1. 结合用户的个人标签和问题背景，分析当前的处境
-2. 详细解读本卦和之卦的含义，说明事情的发展趋势
-3. 深入分析需要解读的爻的寓意，指出关键的注意事项
-4. 根据格局给出具体的行动建议和时机把握
-5. 提供积极正面的指导，帮助用户做出明智的决策
+请严格按照以下JSON格式输出，不要添加任何其他文字：
 
-请用通俗易懂的语言，让用户能够理解和应用你的解读。`;
+{
+  "本卦": {
+    "简单总结": "用通俗易懂的语言总结本卦的核心含义和对当前问题的指示",
+    "技术解读": "基于卦象、卦词、卦义等传统易经理论的深入分析"
+  },
+  "之卦": {
+    "简单总结": "如果有之卦，用通俗语言解释变化趋势和最终结果",
+    "技术解读": "基于之卦的卦象特征和传统解释的技术分析"
+  },
+  "变爻1": {
+    "简单总结": "如果有变爻，用简单语言解释这个爻的关键提示",
+    "技术解读": "基于爻辞、爻位、爻性等传统理论的详细解读"
+  },
+  "变爻2": {
+    "简单总结": "如果有第二个变爻的解读",
+    "技术解读": "第二个变爻的技术性分析"
+  },
+  "不变爻1": {
+    "简单总结": "如果有重要的不变爻需要关注",
+    "技术解读": "不变爻的传统易经解读"
+  },
+  "不变爻2": {
+    "简单总结": "如果有第二个重要不变爻",
+    "技术解读": "第二个不变爻的技术解读"
+  },
+  "整体总结": "综合所有因素，给出对用户问题的整体建议和指导，包括行动建议、时机把握、注意事项等"
+}
+
+注意：
+1. 只输出JSON格式，不要有其他文字
+2. 如果某个爻不存在，对应字段值设为null
+3. 简单总结要通俗易懂，技术解读要专业严谨
+4. 整体总结要实用具体，贴近用户的实际问题`;
 
   // 组件加载时获取数据
   useEffect(() => {
@@ -569,6 +633,7 @@ function Divination() {
 
     setIsAnalyzing(true);
     setAiResponse(''); // 清空之前的回复
+    setParsedAiResult(null); // 清空之前的解析结果
     
     try {
       // 处理占位符
@@ -598,8 +663,18 @@ function Divination() {
       const data = await response.json();
       
       if (response.ok) {
-        setAiResponse(data.ai_response || '');
-        message.success('AI解读完成');
+        const aiResponseText = data.ai_response || '';
+        setAiResponse(aiResponseText);
+        
+        // 解析JSON结果
+        const parsedResult = parseAIResponse(aiResponseText);
+        setParsedAiResult(parsedResult);
+        
+        if (parsedResult) {
+          message.success('AI解读完成并成功解析');
+        } else {
+          message.warning('AI解读完成，但JSON解析失败，请检查格式');
+        }
       } else {
         console.error('AI解读失败:', data);
         message.error('AI解读失败: ' + (data.detail || '未知错误'));
@@ -610,6 +685,79 @@ function Divination() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // 渲染结构化AI解读结果
+  const renderStructuredResult = (result: any) => {
+    if (!result) return null;
+
+    const sections = [
+      { key: '整体总结', title: '整体总结', color: '#d4380d', icon: '🎯' },
+      { key: '本卦', title: '本卦解读', color: '#1890ff', icon: '🔵' },
+      { key: '之卦', title: '之卦解读', color: '#722ed1', icon: '🟣' },
+      { key: '变爻1', title: '变爻一', color: '#f5222d', icon: '🔴' },
+      { key: '变爻2', title: '变爻二', color: '#fa541c', icon: '🟠' },
+      { key: '不变爻1', title: '不变爻一', color: '#52c41a', icon: '🟢' },
+      { key: '不变爻2', title: '不变爻二', color: '#13c2c2', icon: '🔷' }
+    ];
+
+    return (
+      <div>
+        {sections.map(section => {
+          const sectionData = result[section.key];
+          if (!sectionData || sectionData === null) return null;
+
+          // 整体总结是字符串，其他是对象
+          if (section.key === '整体总结') {
+            return (
+              <Card
+                key={section.key}
+                style={{
+                  width: '100%',
+                  marginBottom: 20,
+                  border: `2px solid #ffccc7`,
+                  background: 'linear-gradient(135deg, #fff2e8 0%, #fff7e6 100%)'
+                }}
+                bodyStyle={{ padding: 24 }}
+                title={<span style={{ color: section.color, fontSize: 20, fontWeight: 'bold' }}>{section.icon} {section.title}</span>}
+              >
+                <div style={{ fontSize: 15, lineHeight: 1.8, color: '#262626', whiteSpace: 'pre-wrap' }}>{sectionData}</div>
+              </Card>
+            );
+          }
+
+          // 其他部分是对象
+          return (
+            <Card
+              key={section.key}
+              style={{
+                width: '100%',
+                marginBottom: 20,
+                border: `2px solid ${section.color}20`,
+                background: '#fff',
+              }}
+              bodyStyle={{ padding: 24 }}
+              title={<span style={{ color: section.color, fontSize: 18, fontWeight: 'bold' }}>{section.icon} {section.title}</span>}
+            >
+              {/* 简单总结 */}
+              {sectionData.简单总结 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4, fontWeight: 'bold' }}>💡 简单总结</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.7, color: '#262626', background: '#fafafa', borderRadius: 4, padding: '8px 12px', borderLeft: `3px solid ${section.color}` }}>{sectionData.简单总结}</div>
+                </div>
+              )}
+              {/* 技术解读 */}
+              {sectionData.技术解读 && (
+                <div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4, fontWeight: 'bold' }}>📖 技术解读</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.7, color: '#595959', background: '#f9f9f9', borderRadius: 4, padding: '8px 12px', border: '1px solid #f0f0f0' }}>{sectionData.技术解读}</div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -844,169 +992,165 @@ function Divination() {
 
       {/* 第四部分：AI解读功能 */}
       {divinationResult && (
-        <Card title="AI解读" style={{ marginTop: 16 }}>
-          <Row gutter={16}>
-            {/* 左侧：配置区 */}
-            <Col span={10}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                {/* 问题输入 */}
-                <div>
-                  <Title level={5}>问题</Title>
-                  <Input
-                    placeholder="请输入你想咨询的问题"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                  />
-                </div>
-
-                {/* 模型选择 */}
-                <div>
-                  <Title level={5}>AI模型</Title>
-                  <Select
-                    style={{ width: '100%' }}
-                    placeholder="请选择AI模型"
-                    value={selectedModelId}
-                    onChange={setSelectedModelId}
-                  >
-                    {models.map(model => (
-                      <Option key={model.model_id} value={model.model_id}>
-                        {model.model_name}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                {/* 系统提示词 */}
-                <div>
-                  <Title level={5}>系统提示词（可选）</Title>
-                  <TextArea
-                    rows={4}
-                    placeholder="设置AI的角色和行为规则，如：你是一位精通易经的大师..."
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                  />
-                </div>
-
-                {/* 可用占位符显示 */}
-                <div>
-                  <Title level={5}>可用占位符</Title>
-                  <div style={{ 
-                    maxHeight: 200, 
-                    overflow: 'auto', 
-                    border: '1px solid #f0f0f0', 
-                    borderRadius: 6, 
-                    padding: 8 
-                  }}>
-                    {getAvailablePlaceholders().map((ph, index) => (
-                      <div key={index} style={{ marginBottom: 8 }}>
-                        <Button
-                          size="small"
-                          type="text"
-                          icon={<CopyOutlined />}
-                          onClick={() => insertPlaceholder(ph.key)}
-                          style={{ padding: '4px 8px', height: 'auto' }}
-                        >
-                          <Text code style={{ fontSize: 11 }}>{ph.key}</Text>
-                        </Button>
-                        <Text style={{ fontSize: 12, color: '#666', marginLeft: 4 }}>
-                          {ph.label}: {ph.value ? ph.value.substring(0, 20) + (ph.value.length > 20 ? '...' : '') : '暂无'}
-                        </Text>
-                      </div>
-                    ))}
+        <>
+          <Card title="AI解读" style={{ marginTop: 16 }}>
+            <Row gutter={16}>
+              {/* 左侧：配置区 */}
+              <Col span={10}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {/* 问题输入 */}
+                  <div>
+                    <Title level={5}>问题</Title>
+                    <Input
+                      placeholder="请输入你想咨询的问题"
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                    />
                   </div>
-                </div>
 
-                {/* 开始解读按钮 */}
-                <Button 
-                  type="primary" 
-                  onClick={handleAIAnalysis}
-                  loading={isAnalyzing}
-                  disabled={!selectedUserId || !selectedModelId || !question.trim() || !userPrompt.trim()}
-                  style={{ width: '100%' }}
-                >
-                  开始AI解读
-                </Button>
-              </Space>
-            </Col>
-
-            {/* 右侧：Prompt编辑区 */}
-            <Col span={14}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                {/* 用户提示词 */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Title level={5}>用户提示词</Title>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      点击左侧占位符按钮可快速插入
-                    </Text>
+                  {/* 模型选择 */}
+                  <div>
+                    <Title level={5}>AI模型</Title>
+                    <Select
+                      style={{ width: '100%' }}
+                      placeholder="请选择AI模型"
+                      value={selectedModelId}
+                      onChange={setSelectedModelId}
+                    >
+                      {models.map(model => (
+                        <Option key={model.model_id} value={model.model_id}>
+                          {model.model_name}
+                        </Option>
+                      ))}
+                    </Select>
                   </div>
-                  <TextArea
-                    rows={12}
-                    placeholder="请输入详细的解读提示词，可以包含占位符，如：
-根据用户{user_name}的问题{final_question}，
-结合其标签{user_tags}，
-基于本卦{bengua_name}：{bengua_prompt}
-以及需要解读的爻{yao1_name}：{yao1_prompt}
-请给出详细的易经解读..."
-                    value={userPrompt}
-                    onChange={(e) => setUserPrompt(e.target.value)}
-                  />
-                </div>
 
-                {/* 占位符预览 */}
-                {userPrompt && userPrompt.includes('{') && (
-                  <div style={{ 
-                    padding: 12, 
-                    backgroundColor: '#f6ffed', 
-                    border: '1px solid #b7eb8f', 
-                    borderRadius: 6 
-                  }}>
-                    <Title level={5} style={{ margin: '0 0 8px 0', color: '#52c41a' }}>
-                      🔍 占位符预览（实际发送给AI的内容）
-                    </Title>
+                  {/* 系统提示词 */}
+                  <div>
+                    <Title level={5}>系统提示词（可选）</Title>
+                    <TextArea
+                      rows={4}
+                      placeholder="设置AI的角色和行为规则，如：你是一位精通易经的大师..."
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 可用占位符显示 */}
+                  <div>
+                    <Title level={5}>可用占位符</Title>
                     <div style={{ 
-                      fontSize: 12, 
-                      color: '#666', 
-                      whiteSpace: 'pre-wrap', 
-                      maxHeight: 150, 
-                      overflow: 'auto',
-                      background: '#fff',
-                      padding: 8,
-                      borderRadius: 4,
-                      border: '1px solid #d9f7be'
+                      maxHeight: 200, 
+                      overflow: 'auto', 
+                      border: '1px solid #f0f0f0', 
+                      borderRadius: 6, 
+                      padding: 8 
                     }}>
-                      {processPlaceholders(userPrompt)}
+                      {getAvailablePlaceholders().map((ph, index) => (
+                        <div key={index} style={{ marginBottom: 8 }}>
+                          <Button
+                            size="small"
+                            type="text"
+                            icon={<CopyOutlined />}
+                            onClick={() => insertPlaceholder(ph.key)}
+                            style={{ padding: '4px 8px', height: 'auto' }}
+                          >
+                            <Text code style={{ fontSize: 11 }}>{ph.key}</Text>
+                          </Button>
+                          <Text style={{ fontSize: 12, color: '#666', marginLeft: 4 }}>
+                            {ph.label}: {ph.value ? ph.value.substring(0, 20) + (ph.value.length > 20 ? '...' : '') : '暂无'}
+                          </Text>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
 
-                {/* AI回复显示 */}
-                {(aiResponse || isAnalyzing) && (
+                  {/* 开始解读按钮 */}
+                  <Button 
+                    type="primary" 
+                    onClick={handleAIAnalysis}
+                    loading={isAnalyzing}
+                    disabled={!selectedUserId || !selectedModelId || !question.trim() || !userPrompt.trim()}
+                    style={{ width: '100%' }}
+                  >
+                    开始AI解读
+                  </Button>
+                </Space>
+              </Col>
+
+              {/* 右侧：Prompt编辑区 */}
+              <Col span={14}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {/* 用户提示词 */}
                   <div>
-                    <Title level={5}>AI解读结果</Title>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Title level={5}>用户提示词</Title>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        点击左侧占位符按钮可快速插入
+                      </Text>
+                    </div>
+                    <TextArea
+                      rows={12}
+                      placeholder="请输入详细的解读提示词，可以包含占位符，如：\n根据用户{user_name}的问题{final_question}，\n结合其标签{user_tags}，\n基于本卦{bengua_name}：{bengua_prompt}\n以及需要解读的爻{yao1_name}：{yao1_prompt}\n请给出详细的易经解读..."
+                      value={userPrompt}
+                      onChange={(e) => setUserPrompt(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 占位符预览 */}
+                  {userPrompt && userPrompt.includes('{') && (
                     <div style={{ 
-                      minHeight: 200, 
-                      padding: 16, 
-                      backgroundColor: '#fafafa', 
-                      border: '1px solid #f0f0f0', 
+                      padding: 12, 
+                      backgroundColor: '#f6ffed', 
+                      border: '1px solid #b7eb8f', 
                       borderRadius: 6 
                     }}>
-                      {isAnalyzing ? (
-                        <div style={{ textAlign: 'center', color: '#999' }}>
-                          AI正在思考中，请稍候...
-                        </div>
-                      ) : (
-                        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                          {aiResponse || '暂无回复'}
-                        </div>
-                      )}
+                      <Title level={5} style={{ margin: '0 0 8px 0', color: '#52c41a' }}>
+                        🔍 占位符预览（实际发送给AI的内容）
+                      </Title>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: '#666', 
+                        whiteSpace: 'pre-wrap', 
+                        maxHeight: 150, 
+                        overflow: 'auto',
+                        background: '#fff',
+                        padding: 8,
+                        borderRadius: 4,
+                        border: '1px solid #d9f7be'
+                      }}>
+                        {processPlaceholders(userPrompt)}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Space>
-            </Col>
-          </Row>
-        </Card>
+                  )}
+                </Space>
+              </Col>
+            </Row>
+          </Card>
+          {/* 横跨整行的AI解读结果Card */}
+          {(aiResponse || isAnalyzing) && (
+            <Card style={{ width: '100%', marginTop: 24 }}>
+              <div style={{ display: 'flex', width: '100%' }}>
+                {/* 左侧结构化结果 */}
+                <div style={{ flex: 1, paddingRight: 12 }}>
+                  {renderStructuredResult(parsedAiResult)}
+                </div>
+                {/* 右侧原始响应 */}
+                <div style={{ flex: 1, paddingLeft: 12 }}>
+                  <pre style={{ 
+                    margin: 0, 
+                    whiteSpace: 'pre-wrap', 
+                    wordBreak: 'break-word',
+                    fontFamily: 'Monaco, Consolas, monospace',
+                    lineHeight: 1.4
+                  }}>
+                    {aiResponse || '暂无回复'}
+                  </pre>
+                </div>
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
       {/* 编辑弹框 */}
