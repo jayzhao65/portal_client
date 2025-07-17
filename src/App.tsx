@@ -7,6 +7,7 @@ import {
   UserOutlined, 
   BookOutlined, 
   MessageOutlined, 
+  SettingOutlined,
   ThunderboltOutlined 
 } from '@ant-design/icons';
 
@@ -14,6 +15,7 @@ import {
 import UserManagement from './pages/UserManagement';
 import GuaYaoManagement from './pages/GuaYaoManagement';
 import QuestionClarify from './pages/QuestionClarify';
+import DivinationSetup from './pages/DivinationSetup';
 import Divination from './pages/Divination';
 
 const { Header, Sider, Content } = Layout;
@@ -35,6 +37,11 @@ const menuItems = [
     key: '/clarify',
     icon: <MessageOutlined />,
     label: <Link to="/clarify">问题澄清</Link>
+  },
+  {
+    key: '/setup',
+    icon: <SettingOutlined />,
+    label: <Link to="/setup">占卜设置</Link>
   },
   {
     key: '/divination',
@@ -88,6 +95,7 @@ function App() {
                 <Route path="/" element={<UserManagement />} />
                 <Route path="/gua-yao" element={<GuaYaoManagement />} />
                 <Route path="/clarify" element={<QuestionClarify />} />
+                <Route path="/setup" element={<DivinationSetup />} />
                 <Route path="/divination" element={<Divination />} />
               </Routes>
             </Content>

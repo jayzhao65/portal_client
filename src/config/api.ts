@@ -93,4 +93,9 @@ export const API_ENDPOINTS = {
   CLARIFY_START: '/api/clarify/start',
   CLARIFY_CONTINUE: '/api/clarify/continue',
   CLARIFY_ADD_TAGS: '/api/clarify/add-tags',
+  
+  // 占卜设置相关
+  SETUP_MODELS: '/api/models',
+  SETUP_START: '/api/setup/start',
+  SETUP_CONTINUE: '/api/setup/continue',
 } as const; 
