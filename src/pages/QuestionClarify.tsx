@@ -1,5 +1,5 @@
 // src/pages/QuestionClarify.tsx
-// 问题澄清页面（AI调试）
+// 问题质量评估页面（红黄绿灯系统）
 
 import { useState, useEffect } from 'react';
 import { createApiUrl, API_ENDPOINTS } from '../config/api';
@@ -50,11 +50,12 @@ function QuestionClarify() {
   const [isConversationStarted, setIsConversationStarted] = useState<boolean>(false);  // 是否已开始对话
   const [userInput, setUserInput] = useState<string>('');  // 用户输入内容
 
-  // 右侧结果解析区的状态
-  const [allSuggestedQuestions, setAllSuggestedQuestions] = useState<string[]>([]);  // 累积的所有追问问题（字符串数组）
-  const [extractedTags, setExtractedTags] = useState<string[]>([]);  // AI提取的新标签（仅在最终阶段）
-  const [finalQuestion, setFinalQuestion] = useState<string>('');  // 最终明确的问题
-  const [needsMoreClarification, setNeedsMoreClarification] = useState<boolean>(true);  // 是否还需要追问
+  // 右侧结果解析区的状态 - 红黄绿灯评估
+  const [lightColor, setLightColor] = useState<string>('');  // 当前灯的颜色：red/yellow/green
+  const [lightReason, setLightReason] = useState<string>('');  // 红灯或黄灯的原因
+  const [yellowOptions, setYellowOptions] = useState<string[]>([]);  // 黄灯时的改写选项
+  const [greenUnderstanding, setGreenUnderstanding] = useState<string>('');  // 绿灯时的理解确认
+  const [evaluationHistory, setEvaluationHistory] = useState<any[]>([]);  // 评估历史记录
 
   // 加载状态
   const [isStartingConversation, setIsStartingConversation] = useState<boolean>(false);  // 是否正在开始对话
@@ -93,43 +94,62 @@ function QuestionClarify() {
   };
 
   // ========== 默认系统提示词 ==========
-  const defaultSystemPrompt = `你是一个专业的问题澄清助手，帮助用户将模糊的问题澄清为具体、明确的问题。
+  const defaultSystemPrompt = `你是一个专业的占卜问题质量评估助手，负责判断用户的问题是否适合进行占卜。
 
 用户信息：
 - 用户名：{user_name}
 - 用户标签：{user_tags}
-- 初始问题：{initial_question}
+- 用户问题：{initial_question}
 
-你的任务是：
-1. 分析用户的问题是否足够明确
-2. 如果不明确，提出具体的追问来澄清细节
-3. 如果已经明确，总结最终问题并提取新的用户标签
+你的任务是评估问题质量，按照红黄绿灯进行分类：
+
+🔴 **红灯（不适合占卜）**：
+- 问题本质上不适合占卜（如：明确的事实性问题、已发生的事件、需要专业医疗/法律建议等）
+- 问题涉及伤害他人或违法内容
+- 过于琐碎或无意义的问题
+
+🟡 **黄灯（需要改写）**：
+- 问题意图清晰，但提问方式不够好
+- 问题太宽泛或太具体
+- 时间框架不明确
+- 可以通过改写提升占卜效果
+
+🟢 **绿灯（优质问题）**：
+- 问题明确、具体、适合占卜
+- 时间框架合理
+- 表达清晰，无歧义
+- 可以直接进行占卜
 
 **重要：你必须严格按照以下JSON格式返回，不要添加任何其他文字：**
 
-如果还需要追问：
+红灯情况：
 {
-  "status": "continue",
-  "needs_clarification": true,
-  "suggested_questions": "请具体说明你遇到的问题是什么？比如：是技术问题、业务问题还是其他类型的问题？",
-  "final_question": "",
-  "extracted_tags": []
+  "light_color": "red",
+  "reason": "详细说明为什么这个问题不适合占卜的原因，并建议用户重新思考问题"
 }
 
-如果问题已经澄清：
+黄灯情况：
 {
-  "status": "completed", 
-  "needs_clarification": false,
-  "suggested_questions": "",
-  "final_question": "用户最终明确的具体问题",
-  "extracted_tags": ["从对话中提取的新标签1", "新标签2"]
+  "light_color": "yellow",
+  "reason": "简短说明问题意图清晰但提问方式需要改进的原因",
+  "options": [
+    "改写选项1：具体的改写后问题",
+    "改写选项2：具体的改写后问题", 
+    "改写选项3：具体的改写后问题"
+  ]
+}
+
+绿灯情况：
+{
+  "light_color": "green",
+  "understanding": "对问题的理解和确认，表明可以进入占卜环节的连接句"
 }
 
 注意事项：
-- suggested_questions应该是一个完整的追问句子，不是数组
-- extracted_tags应该是字符串数组，包含从对话中识别出的用户新特征
+- light_color必须是red/yellow/green之一
 - 确保JSON格式完全正确，不要有语法错误
-- 不要在JSON外添加任何解释文字`;
+- 不要在JSON外添加任何解释文字
+- options必须是3个具体的改写后问题，不是建议性文字`;
 
   // ========== 占位符处理功能 ==========
   
@@ -196,7 +216,25 @@ function QuestionClarify() {
         setMessages(data.messages);
         
         // 解析AI回复并更新右侧区域
-        parseAIResponse(data.ai_response);
+        console.log('开始对话 - 完整返回数据:', data);
+        console.log('开始对话 - data.ai_response:', data.ai_response);
+        console.log('开始对话 - data.messages:', data.messages);
+        
+        // 检查ai_response是否存在，如果不存在则从最后一条AI消息中获取
+        let aiResponseContent = data.ai_response;
+        if (!aiResponseContent && data.messages && data.messages.length > 0) {
+          const lastMessage = data.messages[data.messages.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant') {
+            aiResponseContent = lastMessage.content;
+            console.log('从消息中提取AI回复:', aiResponseContent);
+          }
+        }
+        
+        if (aiResponseContent) {
+          parseAIResponse(aiResponseContent);
+        } else {
+          console.error('未找到AI回复内容');
+        }
         
         console.log('对话开始成功:', data);
       } else {
@@ -213,27 +251,84 @@ function QuestionClarify() {
   };
 
   // 解析AI回复，更新右侧显示
-  const parseAIResponse = (aiResponse: any) => {
-    console.log('解析AI回复:', aiResponse);
+  const parseAIResponse = (aiResponseContent: any) => {
+    console.log('解析AI回复原始内容:', aiResponseContent);
+    console.log('原始内容类型:', typeof aiResponseContent);
     
-    // 判断是否还需要追问
-    if (aiResponse.status === 'continue') {
-      setNeedsMoreClarification(true);
+    if (!aiResponseContent) {
+      console.error('AI回复内容为空');
+      return;
+    }
+    
+    let aiResponse;
+    
+    try {
+      // 如果已经是对象，直接使用；如果是字符串，尝试解析JSON
+      if (typeof aiResponseContent === 'object') {
+        console.log('AI回复已经是对象格式');
+        aiResponse = aiResponseContent;
+      } else {
+        console.log('AI回复是字符串，尝试解析JSON');
+        aiResponse = JSON.parse(aiResponseContent);
+      }
+      console.log('✅ JSON解析成功！解析后的AI回复对象:', aiResponse);
+      console.log('对象的所有键:', Object.keys(aiResponse));
+      console.log('对象类型:', Array.isArray(aiResponse) ? 'Array' : typeof aiResponse);
       
-      // 如果有新的追问问题（字符串格式），添加到历史中
-      if (aiResponse.suggested_questions && aiResponse.suggested_questions.trim() !== '') {
-        setAllSuggestedQuestions(prev => [...prev, aiResponse.suggested_questions]);
-      }
-    } else if (aiResponse.status === 'completed') {
-      setNeedsMoreClarification(false);
+      // 尝试访问字段
+      console.log('light_color:', aiResponse.light_color);
+      console.log('reason:', aiResponse.reason);
+      console.log('options:', aiResponse.options);
+      console.log('understanding:', aiResponse.understanding);
       
-      // 设置最终问题和新标签
-      if (aiResponse.final_question) {
-        setFinalQuestion(aiResponse.final_question);
+      // 如果是旧格式，也打印出来
+      console.log('旧格式字段 - status:', aiResponse.status);
+      console.log('旧格式字段 - suggested_questions:', aiResponse.suggested_questions);
+      console.log('旧格式字段 - final_question:', aiResponse.final_question);
+      
+      // 保存当前评估到历史记录
+      const currentEvaluation = {
+        timestamp: new Date().toLocaleTimeString(),
+        lightColor: aiResponse.light_color,
+        reason: aiResponse.reason,
+        options: aiResponse.options,
+        understanding: aiResponse.understanding
+      };
+      console.log('添加评估历史记录:', currentEvaluation);
+      setEvaluationHistory(prev => [...prev, currentEvaluation]);
+      
+      // 根据灯的颜色设置相应状态
+      console.log('设置灯的颜色:', aiResponse.light_color);
+      setLightColor(aiResponse.light_color);
+      
+      if (aiResponse.light_color === 'red') {
+        console.log('🔴 处理红灯状态');
+        setLightReason(aiResponse.reason || '');
+        setYellowOptions([]);
+        setGreenUnderstanding('');
+      } else if (aiResponse.light_color === 'yellow') {
+        console.log('🟡 处理黄灯状态');
+        console.log('设置黄灯原因:', aiResponse.reason);
+        console.log('设置黄灯选项:', aiResponse.options);
+        setLightReason(aiResponse.reason || '');
+        setYellowOptions(aiResponse.options || []);
+        setGreenUnderstanding('');
+      } else if (aiResponse.light_color === 'green') {
+        console.log('🟢 处理绿灯状态');
+        setLightReason('');
+        setYellowOptions([]);
+        setGreenUnderstanding(aiResponse.understanding || '');
       }
-      if (aiResponse.extracted_tags) {
-        setExtractedTags(aiResponse.extracted_tags);
-      }
+      
+    } catch (error) {
+      console.error('❌ 解析AI回复JSON失败:', error);
+      console.error('原始内容:', aiResponseContent);
+      
+      // 解析失败时的处理
+      setLightColor('error');
+      setLightReason(`JSON解析错误: ${error}`);
+      setYellowOptions([]);
+      setGreenUnderstanding('');
     }
   };
 
@@ -277,7 +372,22 @@ function QuestionClarify() {
         ]);
         
         // 解析新的AI回复
-        parseAIResponse(data.ai_response);
+        console.log('继续对话 - 完整返回数据:', data);
+        console.log('继续对话 - data.ai_response:', data.ai_response);
+        console.log('继续对话 - data.new_message:', data.new_message);
+        
+        // 检查ai_response是否存在，如果不存在则从新消息中获取
+        let aiResponseContent = data.ai_response;
+        if (!aiResponseContent && data.new_message && data.new_message.content) {
+          aiResponseContent = data.new_message.content;
+          console.log('从新消息中提取AI回复:', aiResponseContent);
+        }
+        
+        if (aiResponseContent) {
+          parseAIResponse(aiResponseContent);
+        } else {
+          console.error('未找到AI回复内容');
+        }
         
         console.log('继续对话成功:', data);
       } else {
@@ -293,40 +403,11 @@ function QuestionClarify() {
     }
   };
 
-  // 添加标签到用户
-  const handleAddTagsToUser = async () => {
-    if (extractedTags.length === 0 || !selectedUserId) {
-      return;
-    }
-
-    try {
-      const response = await fetch(createApiUrl(API_ENDPOINTS.CLARIFY_ADD_TAGS), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          user_id: selectedUserId?.toString() || '',  // 转换为字符串
-          tags: extractedTags,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        alert('标签添加成功！');
-        // 清空已添加的标签
-        setExtractedTags([]);
-        console.log('标签添加成功:', data);
-      } else {
-        console.error('添加标签失败:', data);
-        alert('添加标签失败: ' + (data.detail || '未知错误'));
-      }
-    } catch (error) {
-      console.error('添加标签失败:', error);
-      alert('添加标签失败: ' + error);
-    }
+  // 选择黄灯选项
+  const handleSelectYellowOption = (selectedOption: string) => {
+    // 将选择的改进问题放入输入框
+    setUserInput(selectedOption);
+    console.log('选择了改进选项:', selectedOption);
   };
 
   // 发送用户消息
@@ -351,11 +432,12 @@ function QuestionClarify() {
     setUserInput('');
     setProcessedSystemPrompt('');
     
-    // 清空右侧结果解析区
-    setAllSuggestedQuestions([]);
-    setExtractedTags([]);
-    setFinalQuestion('');
-    setNeedsMoreClarification(true);
+    // 清空右侧结果解析区 - 新的红黄绿灯状态
+    setLightColor('');
+    setLightReason('');
+    setYellowOptions([]);
+    setGreenUnderstanding('');
+    setEvaluationHistory([]);
     
     // 重置加载状态
     setIsStartingConversation(false);
@@ -370,7 +452,7 @@ function QuestionClarify() {
       {/* 页面标题 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={3} style={{ margin: 0 }}>
-          问题澄清（AI调试）
+          问题质量评估（红黄绿灯系统）
         </Title>
         
         {/* 状态指示器 */}
@@ -446,10 +528,10 @@ function QuestionClarify() {
 
                 {/* 初始问题输入 */}
                 <div>
-                  <Title level={5}>初始问题</Title>
+                  <Title level={5}>待评估问题</Title>
                   <TextArea
                     rows={4}
-                    placeholder="请输入用户的初始模糊问题"
+                    placeholder="请输入用户要进行占卜的问题，系统将评估其质量（红黄绿灯）"
                     value={initialQuestion}
                     onChange={(e) => setInitialQuestion(e.target.value)}
                   />
@@ -474,8 +556,9 @@ function QuestionClarify() {
                   placeholder="请输入系统提示词，支持占位符替换。
 建议包含：
 - 要求AI返回JSON格式
-- 明确needs_clarification字段
-- 说明suggested_questions和final_question的用法
+- 明确light_color字段（red/yellow/green）
+- 说明reason、options、understanding字段的用法
+- 详细定义红黄绿灯的判断标准
 - 使用占位符插入用户信息"
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
@@ -510,7 +593,7 @@ function QuestionClarify() {
                   disabled={!selectedUserId || !selectedModelId || !systemPrompt || !initialQuestion || isStartingConversation}
                   onClick={handleStartConversation}
                 >
-                  {isStartingConversation ? '正在连接AI...' : '开始对话'}
+                  {isStartingConversation ? '正在连接AI...' : '开始评估'}
                 </Button>
               </Space>
             </Col>
@@ -529,7 +612,7 @@ function QuestionClarify() {
                   <div>
                     对话区 
                     <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>
-                      (显示完整AI返回体，用于调试JSON格式)
+                      (显示AI评估过程，用于调试红黄绿灯判断)
                     </span>
                   </div>
                   {/* 重新开始按钮（只有在对话开始后才显示） */}
@@ -552,7 +635,7 @@ function QuestionClarify() {
               <div style={{ minHeight: 400, padding: 16, backgroundColor: '#fafafa' }}>
                 {!isConversationStarted ? (
                   <div style={{ textAlign: 'center', color: '#999', marginTop: 50 }}>
-                    请配置上方参数并点击"开始对话"
+                    请配置上方参数并点击"开始评估"
                   </div>
                 ) : (
                   <div>
@@ -634,13 +717,13 @@ function QuestionClarify() {
             <Card 
               title={
                 <div>
-                  结果解析区
+                  问题质量评估区
                   <div style={{ fontSize: 11, color: '#666', marginTop: 2, lineHeight: '14px' }}>
                     期望JSON字段：<br/>
-                    • needs_clarification: true/false<br/>
-                    • suggested_questions: "..." <br/>
-                    • final_question: "..."<br/>
-                    • extracted_tags: [...]
+                    • light_color: red/yellow/green<br/>
+                    • reason: "..."（红灯/黄灯）<br/>
+                    • options: [...]（黄灯）<br/>
+                    • understanding: "..."（绿灯）
                   </div>
                 </div>
               }
@@ -649,94 +732,190 @@ function QuestionClarify() {
             >
               <Space direction="vertical" style={{ width: '100%' }}>
                 
-                {/* 状态指示器 */}
+                {/* 灯色状态指示器 */}
                 <div style={{ 
                   padding: 8, 
-                  backgroundColor: needsMoreClarification ? '#fff7e6' : '#f6ffed', 
-                  border: `1px solid ${needsMoreClarification ? '#ffd591' : '#b7eb8f'}`,
+                  backgroundColor: 
+                    lightColor === 'red' ? '#fff2f0' :
+                    lightColor === 'yellow' ? '#fffbe6' :
+                    lightColor === 'green' ? '#f6ffed' :
+                    lightColor === 'error' ? '#fff2f0' : '#f5f5f5',
+                  border: `1px solid ${
+                    lightColor === 'red' ? '#ffccc7' :
+                    lightColor === 'yellow' ? '#ffe58f' :
+                    lightColor === 'green' ? '#b7eb8f' :
+                    lightColor === 'error' ? '#ffccc7' : '#d9d9d9'
+                  }`,
                   borderRadius: 4,
                   textAlign: 'center'
                 }}>
                   <span style={{ 
-                    color: needsMoreClarification ? '#fa8c16' : '#52c41a',
+                    color: 
+                      lightColor === 'red' ? '#ff4d4f' :
+                      lightColor === 'yellow' ? '#faad14' :
+                      lightColor === 'green' ? '#52c41a' :
+                      lightColor === 'error' ? '#ff4d4f' : '#666',
                     fontWeight: 'bold'
                   }}>
-                    {needsMoreClarification ? '🔄 还需要继续追问' : '✅ 问题已澄清完成'}
+                    {lightColor === 'red' && '🔴 红灯：问题不适合占卜'}
+                    {lightColor === 'yellow' && '🟡 黄灯：问题需要改写'}
+                    {lightColor === 'green' && '🟢 绿灯：优质问题，可以占卜'}
+                    {lightColor === 'error' && '❌ 解析错误'}
+                    {!lightColor && '⚪ 等待AI评估...'}
                   </span>
                 </div>
                 
-                {/* 第一个区域：AI追问历史 */}
-                <div>
-                  <Title level={5}>AI追问历史</Title>
-                  <div style={{ minHeight: 120, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 4 }}>
-                    {allSuggestedQuestions.length > 0 ? (
-                      allSuggestedQuestions.map((question: string, index: number) => (
-                        <div key={index} style={{ marginBottom: 8, padding: 8, backgroundColor: '#fff', borderRadius: 4 }}>
-                          <span style={{ color: '#1890ff', fontWeight: 'bold' }}>第{index + 1}轮追问：</span>
-                          <br />
-                          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                            {question}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ color: '#999' }}>暂无追问记录</div>
-                    )}
-                  </div>
-                </div>
-
-                <Divider style={{ margin: '12px 0' }} />
-
-                {/* 第二个区域：最终明确的问题 */}
-                <div>
-                  <Title level={5}>✅ 最终明确问题</Title>
-                  <div style={{ minHeight: 80, backgroundColor: '#f6ffed', padding: 8, borderRadius: 4, border: '1px solid #b7eb8f' }}>
-                    {finalQuestion ? (
-                      <div style={{ color: '#52c41a', fontWeight: 'bold' }}>
-                        {finalQuestion}
+                {/* 错误状态：显示错误信息 */}
+                {lightColor === 'error' && (
+                  <div>
+                    <Title level={5}>❌ 解析错误</Title>
+                    <div style={{ minHeight: 100, backgroundColor: '#fff2f0', padding: 8, borderRadius: 4, border: '1px solid #ffccc7' }}>
+                      <div style={{ color: '#ff4d4f', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12 }}>
+                        {lightReason || '未知错误'}
                       </div>
-                    ) : (
-                      <div style={{ color: '#999' }}>等待AI生成最终问题...</div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <Divider style={{ margin: '12px 0' }} />
+                {/* 红灯：显示原因 */}
+                {lightColor === 'red' && (
+                  <div>
+                    <Title level={5}>🔴 不适合占卜的原因</Title>
+                    <div style={{ minHeight: 100, backgroundColor: '#fff2f0', padding: 8, borderRadius: 4, border: '1px solid #ffccc7' }}>
+                      <div style={{ color: '#ff4d4f', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {lightReason || '等待AI分析...'}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {/* 第三个区域：AI提取的新标签 */}
-                <div>
-                  <Title level={5}>🏷️ AI提取的新标签</Title>
-                  <div style={{ minHeight: 60, backgroundColor: '#fff2e8', padding: 8, borderRadius: 4, border: '1px solid #ffd591' }}>
-                    {extractedTags.length > 0 ? (
-                      <div>
-                        {extractedTags.map((tag: string, index: number) => (
-                          <span key={index} style={{ 
-                            background: '#e6f7ff', 
-                            padding: '4px 8px', 
-                            borderRadius: 4, 
-                            marginRight: 4,
-                            marginBottom: 4,
-                            display: 'inline-block',
-                            border: '1px solid #91d5ff'
-                          }}>
-                            {tag}
-                          </span>
-                        ))}
-                        <div style={{ marginTop: 8 }}>
-                          <Button 
-                            size="small" 
-                            type="primary" 
-                            onClick={() => handleAddTagsToUser()}
-                          >
-                            确认添加到用户
+                {/* 黄灯：显示原因和选项 */}
+                {lightColor === 'yellow' && (
+                  <>
+                    <div>
+                      <Title level={5}>🟡 改写原因</Title>
+                      <div style={{ minHeight: 60, backgroundColor: '#fffbe6', padding: 8, borderRadius: 4, border: '1px solid #ffe58f' }}>
+                        <div style={{ color: '#faad14', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {lightReason || '等待AI分析...'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Title level={5}>📝 改进后的问题（请选择一个）</Title>
+                      <div style={{ minHeight: 120, backgroundColor: '#fffbe6', padding: 8, borderRadius: 4, border: '1px solid #ffe58f' }}>
+                        {yellowOptions.length > 0 ? (
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            {yellowOptions.map((option: string, index: number) => (
+                              <div 
+                                key={index}
+                                style={{
+                                  border: '1px solid #d9d9d9',
+                                  borderRadius: 6,
+                                  padding: 12,
+                                  backgroundColor: '#fff',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.3s',
+                                  position: 'relative'
+                                }}
+                                className="yellow-option-card"
+                                onClick={() => handleSelectYellowOption(option)}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#1890ff';
+                                  e.currentTarget.style.backgroundColor = '#f6ffed';
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
+                                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = '#d9d9d9';
+                                  e.currentTarget.style.backgroundColor = '#fff';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
+                              >
+                                <div style={{ 
+                                  fontSize: 12, 
+                                  color: '#666', 
+                                  marginBottom: 6,
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center'
+                                }}>
+                                  <span style={{ fontWeight: 'bold' }}>改进问题 {index + 1}</span>
+                                  <span style={{ 
+                                    backgroundColor: '#e6f7ff', 
+                                    color: '#1890ff',
+                                    padding: '2px 6px',
+                                    borderRadius: 3,
+                                    fontSize: 10
+                                  }}>
+                                    点击选择
+                                  </span>
+                                </div>
+                                <div style={{ 
+                                  fontSize: 14, 
+                                  color: '#333', 
+                                  lineHeight: '1.4',
+                                  wordBreak: 'break-word'
+                                }}>
+                                  {option}
+                                </div>
+                              </div>
+                            ))}
+                          </Space>
+                        ) : (
+                          <div style={{ color: '#999' }}>等待AI生成改进后的问题...</div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 绿灯：显示理解确认 */}
+                {lightColor === 'green' && (
+                  <div>
+                    <Title level={5}>🟢 问题理解确认</Title>
+                    <div style={{ minHeight: 100, backgroundColor: '#f6ffed', padding: 8, borderRadius: 4, border: '1px solid #b7eb8f' }}>
+                      <div style={{ color: '#52c41a', fontWeight: 'bold', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {greenUnderstanding || '等待AI确认...'}
+                      </div>
+                      {greenUnderstanding && (
+                        <div style={{ marginTop: 12, textAlign: 'center' }}>
+                          <Button type="primary" size="large">
+                            进入占卜环节 →
                           </Button>
                         </div>
-                      </div>
-                    ) : (
-                      <div style={{ color: '#999' }}>暂无新标签</div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* 评估历史记录 */}
+                {evaluationHistory.length > 0 && (
+                  <>
+                    <Divider style={{ margin: '12px 0' }} />
+                    <div>
+                      <Title level={5}>📋 评估历史</Title>
+                      <div style={{ maxHeight: 120, overflowY: 'auto', backgroundColor: '#fafafa', padding: 8, borderRadius: 4 }}>
+                        {evaluationHistory.map((evaluation, index) => (
+                          <div key={index} style={{ marginBottom: 8, padding: 6, backgroundColor: '#fff', borderRadius: 4, fontSize: 12 }}>
+                            <div style={{ color: '#666' }}>{evaluation.timestamp}</div>
+                            <div style={{ 
+                              color: 
+                                evaluation.lightColor === 'red' ? '#ff4d4f' :
+                                evaluation.lightColor === 'yellow' ? '#faad14' :
+                                evaluation.lightColor === 'green' ? '#52c41a' : '#666'
+                            }}>
+                              {evaluation.lightColor === 'red' && '🔴 红灯'}
+                              {evaluation.lightColor === 'yellow' && '🟡 黄灯'}
+                              {evaluation.lightColor === 'green' && '🟢 绿灯'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
               </Space>
             </Card>
