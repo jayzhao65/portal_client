@@ -22,6 +22,14 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    build: {
+      // 确保构建时正确处理路由
+      rollupOptions: {
+        output: {
+          manualChunks: undefined
+        }
+      }
+    },
     define: {
       // 让前端代码能访问环境变量
       __API_BASE_URL__: JSON.stringify(apiBaseUrl)
