@@ -13,35 +13,18 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:8000';
   }
   
-  // 尝试获取API基础URL的不同方式
-  let apiUrl = '';
-  
-  // 方式1：使用Vite定义的全局变量（推荐）
-  if (typeof __API_BASE_URL__ !== 'undefined') {
-    apiUrl = __API_BASE_URL__;
-  }
-  // 方式2：使用环境变量（备用）
-  else if (import.meta.env.VITE_API_BASE_URL) {
-    apiUrl = import.meta.env.VITE_API_BASE_URL;
-  }
-  // 方式3：使用默认值
-  else {
-    apiUrl = defaultBackendUrl;
-  }
-  
-  // 添加调试日志
+  // 生产环境：强制使用正确的API地址
   console.log('🔍 API配置调试信息:', {
     isProd,
     mode,
     __API_BASE_URL__: typeof __API_BASE_URL__ !== 'undefined' ? __API_BASE_URL__ : 'undefined',
     envUrl: import.meta.env.VITE_API_BASE_URL,
     defaultBackendUrl,
-    finalApiUrl: apiUrl
+    finalApiUrl: defaultBackendUrl
   });
   
-  // 生产环境：使用获取到的API URL
-  console.log('✅ 生产环境使用API地址:', apiUrl);
-  return apiUrl;
+  console.log('✅ 生产环境强制使用API地址:', defaultBackendUrl);
+  return defaultBackendUrl;
 };
 
 // 导出API基础URL
