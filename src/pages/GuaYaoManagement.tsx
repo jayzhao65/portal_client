@@ -20,28 +20,30 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
-// 定义卦数据类型
+// 定义卦数据类型 - 更新为匹配gua_info表结构
 interface Gua {
   id: string;
   gua_name: string;
   gua_prompt: string;
   position: number;
   binary_code: string;
+  gua_ci?: string;
 }
 
-// 定义爻数据类型
+// 定义爻数据类型 - 更新为匹配yao_info表结构
 interface Yao {
   id: string;
-  gua_position: number; // 修改：gua_position是卦的位置数字(1-64)，不是UUID
-  position: number;
+  gua_position: number; // 卦的位置数字(1-64)
+  position: number;      // 爻位(1-6)
   yao_name: string;
   yao_prompt: string;
+  gua_name?: string;     // 卦名，用于显示
 }
 
 // 卦和爻管理页面组件
 function GuaYaoManagement() {
   // 状态管理
-  const [activeTab, setActiveTab] = useState<'gua' | 'yao'>('gua'); // 当前选中的标签页
+  const [activeTab, setActiveTab] = useState<'gua' | 'yao'>('gua');
   const [guas, setGuas] = useState<Gua[]>([]);
   const [yaos, setYaos] = useState<Yao[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,27 +51,35 @@ function GuaYaoManagement() {
   const [editingItem, setEditingItem] = useState<Gua | Yao | null>(null);
   const [form] = Form.useForm();
 
-  // 获取卦列表
+  // 获取卦列表 - 使用新的API接口
   const fetchGuas = async () => {
     setLoading(true);
     try {
-      const response = await fetch(createApiUrl(API_ENDPOINTS.GUAS));
+      const response = await fetch(createApiUrl('/api/v1/gua-list'));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setGuas(data);
     } catch (error) {
+      console.error('获取卦列表失败:', error);
       message.error('获取卦列表失败');
     }
     setLoading(false);
   };
 
-  // 获取爻列表
+  // 获取爻列表 - 使用新的API接口
   const fetchYaos = async () => {
     setLoading(true);
     try {
-      const response = await fetch(createApiUrl(API_ENDPOINTS.YAOS));
+      const response = await fetch(createApiUrl('/api/v1/yao-list'));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setYaos(data);
     } catch (error) {
+      console.error('获取爻列表失败:', error);
       message.error('获取爻列表失败');
     }
     setLoading(false);
@@ -93,11 +103,12 @@ function GuaYaoManagement() {
     setActiveTab(e.target.value);
   };
 
-  // 新增
+  // 新增 - 暂时禁用，因为需要后端支持
   const handleAdd = () => {
-    setEditingItem(null);
-    setModalVisible(true);
-    form.resetFields();
+    message.info('新增功能需要后端支持，暂时不可用');
+    // setEditingItem(null);
+    // setModalVisible(true);
+    // form.resetFields();
   };
 
   // 编辑
@@ -111,12 +122,13 @@ function GuaYaoManagement() {
         gua_name: gua.gua_name,
         gua_prompt: gua.gua_prompt,
         position: gua.position,
-        binary_code: gua.binary_code
+        binary_code: gua.binary_code,
+        gua_ci: gua.gua_ci || ''
       });
     } else {
       const yao = item as Yao;
       form.setFieldsValue({
-        gua_position: yao.gua_position, // 修改：使用gua_position
+        gua_position: yao.gua_position,
         position: yao.position,
         yao_name: yao.yao_name,
         yao_prompt: yao.yao_prompt
@@ -124,68 +136,61 @@ function GuaYaoManagement() {
     }
   };
 
-  // 删除
+  // 删除 - 暂时禁用，因为需要后端支持
   const handleDelete = async (id: string) => {
-    try {
-      const endpoint = activeTab === 'gua' ? createApiUrl(API_ENDPOINTS.GUA_BY_ID(id)) : createApiUrl(API_ENDPOINTS.YAO_BY_ID(id));
-      await fetch(endpoint, { method: 'DELETE' });
-      message.success('删除成功');
-      if (activeTab === 'gua') {
-        fetchGuas();
-      } else {
-        fetchYaos();
-      }
-    } catch (error) {
-      message.error('删除失败');
-    }
+    message.info('删除功能需要后端支持，暂时不可用');
+    // try {
+    //   const endpoint = activeTab === 'gua' ? createApiUrl(API_ENDPOINTS.GUA_BY_ID(id)) : createApiUrl(API_ENDPOINTS.YAO_BY_ID(id));
+    //   await fetch(endpoint, { method: 'DELETE' });
+    //   message.success('删除成功');
+    //   if (activeTab === 'gua') {
+    //     fetchGuas();
+    //   } else {
+    //     fetchYaos();
+    //   }
+    // } catch (error) {
+    //   message.error('删除失败');
+    // }
   };
 
-  // 保存（新增或编辑）
+  // 保存（编辑）
   const handleSave = async (values: any) => {
+    if (!editingItem) {
+      message.error('没有正在编辑的项目');
+      return;
+    }
+
     try {
       let endpoint = '';
-      let method = '';
+      let method = 'PUT';
       let data = {};
 
       if (activeTab === 'gua') {
         data = {
           gua_name: values.gua_name,
           gua_prompt: values.gua_prompt,
-          position: values.position,
-          binary_code: values.binary_code
+          gua_ci: values.gua_ci
         };
-        
-        if (editingItem) {
-          endpoint = createApiUrl(API_ENDPOINTS.GUA_BY_ID(editingItem.id));
-          method = 'PUT';
-        } else {
-          endpoint = createApiUrl(API_ENDPOINTS.GUAS);
-          method = 'POST';
-        }
+        endpoint = createApiUrl(`/api/v1/gua/${editingItem.id}`);
       } else {
         data = {
-          gua_position: values.gua_position, // 修改：使用gua_position
-          position: values.position,
           yao_name: values.yao_name,
           yao_prompt: values.yao_prompt
         };
-        
-        if (editingItem) {
-          endpoint = createApiUrl(API_ENDPOINTS.YAO_BY_ID(editingItem.id));
-          method = 'PUT';
-        } else {
-          endpoint = createApiUrl(API_ENDPOINTS.YAOS);
-          method = 'POST';
-        }
+        endpoint = createApiUrl(`/api/v1/yao/${editingItem.id}`);
       }
 
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
 
-      message.success(editingItem ? '编辑成功' : '新增成功');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      message.success('编辑成功');
       setModalVisible(false);
       
       if (activeTab === 'gua') {
@@ -194,6 +199,7 @@ function GuaYaoManagement() {
         fetchYaos();
       }
     } catch (error) {
+      console.error('保存失败:', error);
       message.error('保存失败');
     }
   };
@@ -222,6 +228,12 @@ function GuaYaoManagement() {
       dataIndex: 'binary_code',
       key: 'binary_code',
       width: 120,
+    },
+    {
+      title: '卦辞',
+      dataIndex: 'gua_ci',
+      key: 'gua_ci',
+      ellipsis: true,
     },
     {
       title: 'Prompt',
@@ -254,6 +266,7 @@ function GuaYaoManagement() {
               size="small"
               danger 
               icon={<DeleteOutlined />}
+              disabled
             >
               删除
             </Button>
@@ -276,10 +289,9 @@ function GuaYaoManagement() {
       dataIndex: 'gua_position',
       key: 'gua_position',
       width: 150,
-      render: (gua_position: number) => {
-        // 根据gua_position找到对应的卦名
-        const gua = guas.find(g => g.position === gua_position);
-        return gua ? `第${gua.position}卦 - ${gua.gua_name}` : `第${gua_position}卦`;
+      render: (gua_position: number, record: Yao) => {
+        // 显示卦名和位置
+        return `第${gua_position}卦 - ${record.gua_name || '未知卦'}`;
       },
     },
     {
@@ -324,6 +336,7 @@ function GuaYaoManagement() {
               size="small"
               danger 
               icon={<DeleteOutlined />}
+              disabled
             >
               删除
             </Button>
@@ -348,11 +361,12 @@ function GuaYaoManagement() {
           type="primary" 
           icon={<PlusOutlined />}
           onClick={handleAdd}
+          disabled
         >
           新增{activeTab === 'gua' ? '卦' : '爻'}
         </Button>
-      </div>
-
+            </div>
+            
       {/* 数据表格 */}
       {activeTab === 'gua' ? (
         <Table<Gua>
@@ -374,9 +388,9 @@ function GuaYaoManagement() {
         />
       )}
 
-      {/* 新增/编辑弹窗 */}
+      {/* 编辑弹窗 */}
       <Modal
-        title={`${editingItem ? '编辑' : '新增'}${activeTab === 'gua' ? '卦' : '爻'}`}
+        title={`编辑${activeTab === 'gua' ? '卦' : '爻'}`}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={form.submit}
@@ -405,7 +419,7 @@ function GuaYaoManagement() {
                 label="顺序"
                 rules={[{ required: true, message: '请输入顺序' }]}
               >
-                <InputNumber min={1} max={64} placeholder="请输入顺序(1-64)" style={{ width: '100%' }} />
+                <InputNumber min={1} max={64} placeholder="请输入顺序(1-64)" style={{ width: '100%' }} disabled />
               </Form.Item>
 
               <Form.Item
@@ -413,7 +427,15 @@ function GuaYaoManagement() {
                 label="二进制编号"
                 rules={[{ required: true, message: '请输入二进制编号' }]}
               >
-                <Input placeholder="请输入六位二进制编号，如：100101" maxLength={6} />
+                <Input placeholder="请输入六位二进制编号，如：100101" maxLength={6} disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="gua_ci"
+                label="卦辞"
+                rules={[{ required: false }]}
+              >
+                <Input.TextArea rows={2} placeholder="请输入卦辞内容" />
               </Form.Item>
 
               <Form.Item
@@ -432,13 +454,13 @@ function GuaYaoManagement() {
                 label="所属卦"
                 rules={[{ required: true, message: '请选择所属卦' }]}
               >
-                <Select placeholder="请选择所属卦">
-                  {guas.map(gua => (
-                    <Select.Option key={gua.id} value={gua.position}>
-                      第{gua.position}卦 - {gua.gua_name}
-                    </Select.Option>
-                  ))}
-                </Select>
+                <InputNumber 
+                  min={1} 
+                  max={64} 
+                  placeholder="请输入所属卦位置(1-64)" 
+                  style={{ width: '100%' }} 
+                  disabled
+                />
               </Form.Item>
 
               <Form.Item
@@ -448,9 +470,10 @@ function GuaYaoManagement() {
               >
                 <InputNumber 
                   min={1} 
-                  max={7} 
-                  placeholder="请输入爻位(1-7，乾坤卦有第7爻)" 
+                  max={6} 
+                  placeholder="请输入爻位(1-6)" 
                   style={{ width: '100%' }} 
+                  disabled
                 />
               </Form.Item>
 

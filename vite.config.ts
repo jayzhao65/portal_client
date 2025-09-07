@@ -5,7 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
-  const apiBaseUrl = env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiBaseUrl = env.VITE_API_BASE_URL || 'https://yilore.lichen.xin'
+  
+  console.log('🔧 Vite配置 - API基础URL:', apiBaseUrl)
   
   return {
     plugins: [react()],
@@ -14,7 +16,9 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: apiBaseUrl,
-          changeOrigin: true
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path
         }
       }
     },

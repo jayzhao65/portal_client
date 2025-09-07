@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.0",
+    "@supabase/supabase-js": "^2.56.0",
     "antd": "^5.12.0",
     "axios": "^1.6.0",
     "react": "^18.2.0",

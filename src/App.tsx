@@ -4,19 +4,14 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Layout, Menu, Typography } from 'antd';
 import { 
-  UserOutlined, 
   BookOutlined, 
-  MessageOutlined, 
-  SettingOutlined,
-  ThunderboltOutlined 
+  CodeOutlined
 } from '@ant-design/icons';
 
 // 导入页面组件
-import UserManagement from './pages/UserManagement';
+import FlowTest from './pages/FlowTest';
 import GuaYaoManagement from './pages/GuaYaoManagement';
-import QuestionClarify from './pages/QuestionClarify';
-import DivinationSetup from './pages/DivinationSetup';
-import Divination from './pages/Divination';
+import PromptConfig from './pages/PromptConfig';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -24,9 +19,9 @@ const { Title } = Typography;
 // 菜单项配置
 const menuItems = [
   {
-    key: '/',
-    icon: <UserOutlined />,
-    label: <Link to="/">用户管理</Link>
+    key: '/flow-test',
+    icon: <CodeOutlined />,
+    label: <Link to="/flow-test">流程测试</Link>
   },
   {
     key: '/gua-yao',
@@ -34,19 +29,9 @@ const menuItems = [
     label: <Link to="/gua-yao">卦和爻管理</Link>
   },
   {
-    key: '/clarify',
-    icon: <MessageOutlined />,
-    label: <Link to="/clarify">问题澄清</Link>
-  },
-  {
-    key: '/setup',
-    icon: <SettingOutlined />,
-    label: <Link to="/setup">占卜设置</Link>
-  },
-  {
-    key: '/divination',
-    icon: <ThunderboltOutlined />,
-    label: <Link to="/divination">核心占卜</Link>
+    key: '/prompt-config',
+    icon: <CodeOutlined />,
+    label: <Link to="/prompt-config">Prompt配置</Link>
   }
 ];
 
@@ -58,7 +43,7 @@ function AppSider() {
     <Sider width={200} style={{ background: '#fff' }}>
       <div style={{ padding: '16px', textAlign: 'center' }}>
         <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
-          AI周易占卜
+          YiLore
         </Title>
         <div style={{ fontSize: '12px', color: '#666' }}>后台管理系统</div>
       </div>
@@ -92,11 +77,10 @@ function App() {
           <Layout style={{ padding: '0' }}>
             <Content className="page-content">
               <Routes>
-                <Route path="/" element={<UserManagement />} />
+                <Route path="/" element={<FlowTest />} />
+                <Route path="/flow-test" element={<FlowTest />} />
                 <Route path="/gua-yao" element={<GuaYaoManagement />} />
-                <Route path="/clarify" element={<QuestionClarify />} />
-                <Route path="/setup" element={<DivinationSetup />} />
-                <Route path="/divination" element={<Divination />} />
+                <Route path="/prompt-config" element={<PromptConfig />} />
               </Routes>
             </Content>
           </Layout>

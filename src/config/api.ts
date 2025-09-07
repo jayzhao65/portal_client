@@ -5,7 +5,13 @@
 const getApiBaseUrl = (): string => {
   const isProd = import.meta.env.PROD;
   const mode = import.meta.env.MODE;
-  const defaultBackendUrl = 'https://oracle-backend-g9sn.onrender.com';
+  const defaultBackendUrl = 'https://yilore.lichen.xin';
+  
+  // 开发环境强制使用localhost:8000
+  if (!isProd) {
+    console.log('🔧 开发环境强制使用: http://localhost:8000');
+    return 'http://localhost:8000';
+  }
   
   // 尝试获取API基础URL的不同方式
   let apiUrl = '';
@@ -33,15 +39,9 @@ const getApiBaseUrl = (): string => {
     finalApiUrl: apiUrl
   });
   
-  if (isProd) {
-    // 生产环境：使用获取到的API URL
-    console.log('✅ 生产环境使用API地址:', apiUrl);
-    return apiUrl;
-  } else {
-    // 开发环境：使用代理，所以直接用相对路径
-    console.log('🔧 开发环境使用代理，API URL:', apiUrl);
-    return '';
-  }
+  // 生产环境：使用获取到的API URL
+  console.log('✅ 生产环境使用API地址:', apiUrl);
+  return apiUrl;
 };
 
 // 导出API基础URL
@@ -85,6 +85,12 @@ export const API_ENDPOINTS = {
   YAO_SEARCH: (guaPosition: number, yaoPosition: number) => `/api/yaos/search/${guaPosition}/${yaoPosition}`,
   YAO_OPTIONS: '/api/yao-options',
   
+  // 卦爻管理相关（新接口）
+  GUA_LIST: '/api/v1/gua-list',
+  YAO_LIST: '/api/v1/yao-list',
+  GUA_MANAGEMENT: (id: string) => `/api/v1/gua/${id}`,
+  YAO_MANAGEMENT: (id: string) => `/api/v1/yao/${id}`,
+  
   // 占卜相关
   DIVINE: '/api/divine',
   AI_INTERPRETATION: '/api/ai-interpretation',
@@ -98,4 +104,10 @@ export const API_ENDPOINTS = {
   SETUP_MODELS: '/api/models',
   SETUP_START: '/api/setup/start',
   SETUP_CONTINUE: '/api/setup/continue',
+  
+  // Prompt配置相关
+  PROMPT_CONFIGS: '/api/v1/prompt-configs/',
+  PROMPT_CONFIG_BY_ID: (id: string) => `/api/v1/prompt-configs/${id}`,
+  PROMPT_CONFIG_ACTIVATE: (id: string) => `/api/v1/prompt-configs/${id}/activate`,
+  PROMPT_CONFIG_MODELS: '/api/v1/prompt-configs/models',
 } as const; 
