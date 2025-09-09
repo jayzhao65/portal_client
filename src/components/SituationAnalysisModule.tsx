@@ -264,7 +264,14 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
             <div style={{ marginBottom: 16 }}>
               <Text strong>占位符说明:</Text>
               <div style={{ marginTop: 8 }}>
-                <Tag style={{ margin: '4px' }}>{'{divination_info}'}: 占卜信息</Tag>
+                <Tag style={{ margin: '4px' }}>{'{ben_gua_name}'}: 本卦名称</Tag>
+                <Tag style={{ margin: '4px' }}>{'{ben_gua_prompt}'}: 本卦提示</Tag>
+                <Tag style={{ margin: '4px' }}>{'{zhi_gua_name}'}: 之卦名称</Tag>
+                <Tag style={{ margin: '4px' }}>{'{zhi_gua_prompt}'}: 之卦提示</Tag>
+                <Tag style={{ margin: '4px' }}>{'{yao_prompt_text}'}: 变爻提示文本</Tag>
+                <Tag style={{ margin: '4px' }}>{'{expanded_question_text}'}: 扩写问题文本</Tag>
+                <Tag style={{ margin: '4px' }}>{'{question_guidance}'}: 问题指导</Tag>
+                <Tag style={{ margin: '4px' }}>{'{final_question}'}: 最终问题</Tag>
               </div>
             </div>
           </Col>
@@ -484,7 +491,8 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
               {key: "{zhi_gua_prompt}", description: "之卦提示"},
               {key: "{yao_prompt_text}", description: "变爻提示文本"},
               {key: "{expanded_question_text}", description: "扩写问题文本"},
-              {key: "{question_guidance}", description: "问题指导"}
+              {key: "{question_guidance}", description: "问题指导"},
+              {key: "{final_question}", description: "最终问题"}
             ]}
             readingId={readingId}
             onPlaceholderDataUpdate={(data) => {
