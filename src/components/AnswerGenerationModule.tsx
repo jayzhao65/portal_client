@@ -265,15 +265,57 @@ const AnswerGenerationModule: React.FC<AnswerGenerationModuleProps> = ({
           <Col span={12}>
             <div style={{ marginBottom: 16 }}>
               <Text strong>占位符说明:</Text>
-              <div style={{ marginTop: 8 }}>
-                <Tag style={{ margin: '4px' }}>{'{final_question}'}: 最终问题</Tag>
-                <Tag style={{ margin: '4px' }}>{'{situation_analysis}'}: 现状分析</Tag>
-                <Tag style={{ margin: '4px' }}>{'{geju_name}'}: 格局名称</Tag>
-                <Tag style={{ margin: '4px' }}>{'{ben_gua_title}'}: 本卦标题</Tag>
-                <Tag style={{ margin: '4px' }}>{'{ben_gua_name}'}: 本卦名称</Tag>
-                <Tag style={{ margin: '4px' }}>{'{zhi_gua_title}'}: 之卦标题</Tag>
-                <Tag style={{ margin: '4px' }}>{'{zhi_gua_name}'}: 之卦名称</Tag>
-                <Tag style={{ margin: '4px' }}>{'{yao_to_read_formatted}'}: 变爻信息</Tag>
+              <div style={{ marginTop: 8, maxHeight: '200px', overflowY: 'auto' }}>
+                {/* 用户问题相关 */}
+                <div style={{ marginBottom: '8px' }}>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>用户问题相关:</Text>
+                  <div>
+                    <Tag style={{ margin: '2px' }}>{'{final_question}'}: 最终问题</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{question}'}: 原始问题</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{situation_analysis}'}: 现状分析</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{situation_supplement}'}: 现状补充</Tag>
+                  </div>
+                </div>
+                
+                {/* 格局信息 */}
+                <div style={{ marginBottom: '8px' }}>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>格局信息:</Text>
+                  <div>
+                    <Tag style={{ margin: '2px' }}>{'{geju_name}'}: 格局名称</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{geju_prompt}'}: 格局描述</Tag>
+                  </div>
+                </div>
+                
+                {/* 本卦信息 */}
+                <div style={{ marginBottom: '8px' }}>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>本卦信息:</Text>
+                  <div>
+                    <Tag style={{ margin: '2px' }}>{'{ben_gua_name}'}: 本卦名称</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{ben_gua_title}'}: 本卦标题</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{ben_gua_prompt}'}: 本卦画面</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{ben_gua_ci}'}: 本卦卦辞</Tag>
+                  </div>
+                </div>
+                
+                {/* 之卦信息 */}
+                <div style={{ marginBottom: '8px' }}>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>之卦信息:</Text>
+                  <div>
+                    <Tag style={{ margin: '2px' }}>{'{zhi_gua_name}'}: 之卦名称</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{zhi_gua_title}'}: 之卦标题</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{zhi_gua_prompt}'}: 之卦画面</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{zhi_gua_ci}'}: 之卦卦辞</Tag>
+                  </div>
+                </div>
+                
+                {/* 其他信息 */}
+                <div>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>其他信息:</Text>
+                  <div>
+                    <Tag style={{ margin: '2px' }}>{'{yao_to_read_formatted}'}: 变爻信息</Tag>
+                    <Tag style={{ margin: '2px' }}>{'{position_titles}'}: 位置标题</Tag>
+                  </div>
+                </div>
               </div>
             </div>
           </Col>
@@ -547,15 +589,33 @@ const AnswerGenerationModule: React.FC<AnswerGenerationModuleProps> = ({
           <PlaceholderDisplayModule
             stageName={stageName}
             placeholders={[
+              // 用户问题相关
               {key: "{final_question}", description: "最终问题"},
               {key: "{question}", description: "原始问题"},
               {key: "{situation_analysis}", description: "现状分析内容"},
               {key: "{situation_supplement}", description: "现状补充信息"},
+              
+              // 格局信息
               {key: "{geju_name}", description: "格局名称"},
+              {key: "{geju_prompt}", description: "格局描述"},
+              
+              // 本卦信息
               {key: "{ben_gua_name}", description: "本卦名称"},
               {key: "{ben_gua_title}", description: "本卦标题"},
+              {key: "{ben_gua_prompt}", description: "本卦画面描述"},
+              {key: "{ben_gua_ci}", description: "本卦卦辞"},
+              
+              // 之卦信息
               {key: "{zhi_gua_name}", description: "之卦名称"},
+              {key: "{zhi_gua_title}", description: "之卦标题"},
+              {key: "{zhi_gua_prompt}", description: "之卦画面描述"},
+              {key: "{zhi_gua_ci}", description: "之卦卦辞"},
+              
+              // 爻位信息
               {key: "{yao_to_read_formatted}", description: "需要解读的爻位信息"},
+              
+              // 其他信息
+              {key: "{position_titles}", description: "位置标题信息"},
               {key: "{extended_questions}", description: "扩写问题列表"}
             ]}
             readingId={readingId}
