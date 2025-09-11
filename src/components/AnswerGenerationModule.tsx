@@ -313,7 +313,6 @@ const AnswerGenerationModule: React.FC<AnswerGenerationModuleProps> = ({
                   <Text type="secondary" style={{ fontSize: '12px' }}>其他信息:</Text>
                   <div>
                     <Tag style={{ margin: '2px' }}>{'{yao_to_read_formatted}'}: 变爻信息</Tag>
-                    <Tag style={{ margin: '2px' }}>{'{position_titles}'}: 位置标题</Tag>
                   </div>
                 </div>
               </div>
@@ -615,7 +614,6 @@ const AnswerGenerationModule: React.FC<AnswerGenerationModuleProps> = ({
               {key: "{yao_to_read_formatted}", description: "需要解读的爻位信息"},
               
               // 其他信息
-              {key: "{position_titles}", description: "位置标题信息"},
               {key: "{extended_questions}", description: "扩写问题列表"}
             ]}
             readingId={readingId}
