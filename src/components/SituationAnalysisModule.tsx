@@ -73,6 +73,14 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
   // 本地状态
   const [readingId, setReadingId] = useState<string>(globalReadingId);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // 现状补充相关状态
+  const [supplementContent, setSupplementContent] = useState<string>("");
+  const [isSavingSupplement, setIsSavingSupplement] = useState(false);
+  const [supplementSaveStatus, setSupplementSaveStatus] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // 阶段名称和占位符
   const stageName = "现状分析";
@@ -83,6 +91,62 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
   useEffect(() => {
     setReadingId(globalReadingId);
   }, [globalReadingId]);
+
+  // 保存现状补充信息
+  const handleSaveSupplement = async () => {
+    if (!readingId.trim()) {
+      message.warning('请输入Reading ID');
+      return;
+    }
+
+    setIsSavingSupplement(true);
+    setSupplementSaveStatus(null);
+    
+    try {
+      // 调用现状补充保存API
+      const response = await fetch(createApiUrl('/situation/supplement'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Dev-Mode': 'true',
+          'X-Dev-Token': 'dev-secret-2024'
+        },
+        body: JSON.stringify({
+          reading_id: readingId.trim(),
+          supplement_content: supplementContent.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API调用失败: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSupplementSaveStatus({
+          success: true,
+          message: '现状补充信息保存成功'
+        });
+        message.success('现状补充信息保存成功');
+      } else {
+        setSupplementSaveStatus({
+          success: false,
+          message: result.message || '保存失败'
+        });
+        message.error(result.message || '保存失败');
+      }
+    } catch (error) {
+      const errorMessage = `保存现状补充信息失败: ${error}`;
+      setSupplementSaveStatus({
+        success: false,
+        message: errorMessage
+      });
+      message.error(errorMessage);
+    } finally {
+      setIsSavingSupplement(false);
+    }
+  };
 
   // 处理现状分析
   const handleSituationAnalysis = async () => {
@@ -347,6 +411,41 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
             </div>
           </Col>
         </Row>
+
+        {/* 现状补充输入区域 */}
+        <div style={{ marginTop: '16px', padding: '16px', background: '#f0f8ff', border: '1px solid #91d5ff', borderRadius: '6px' }}>
+          <Text strong style={{ display: 'block', marginBottom: '12px', color: '#1890ff' }}>
+            💭 现状补充信息
+          </Text>
+          <div style={{ marginBottom: '12px' }}>
+            <TextArea
+              value={supplementContent}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSupplementContent(e.target.value)}
+              placeholder="请输入你对现状分析的补充或反馈..."
+              rows={4}
+              style={{ marginBottom: '8px' }}
+            />
+            <Button
+              type="primary"
+              onClick={handleSaveSupplement}
+              loading={isSavingSupplement}
+              disabled={!supplementContent.trim() || !readingId.trim()}
+              style={{ width: '100%' }}
+            >
+              {isSavingSupplement ? '保存中...' : '保存补充信息'}
+            </Button>
+          </div>
+          
+          {/* 保存状态显示 */}
+          {supplementSaveStatus && (
+            <Alert
+              message={supplementSaveStatus.message}
+              type={supplementSaveStatus.success ? 'success' : 'error'}
+              showIcon
+              style={{ marginTop: '8px' }}
+            />
+          )}
+        </div>
 
         {/* AI原始响应 */}
         {result.apiResponse?.data?.ai_raw_response && (
