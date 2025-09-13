@@ -104,7 +104,7 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
     
     try {
       // 调用现状补充保存API
-      const response = await fetch(createApiUrl('/situation/supplement'), {
+      const response = await fetch(createApiUrl('/api/v1/situation/supplement'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
