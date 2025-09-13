@@ -412,40 +412,6 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
           </Col>
         </Row>
 
-        {/* 现状补充输入区域 */}
-        <div style={{ marginTop: '16px', padding: '16px', background: '#f0f8ff', border: '1px solid #91d5ff', borderRadius: '6px' }}>
-          <Text strong style={{ display: 'block', marginBottom: '12px', color: '#1890ff' }}>
-            💭 现状补充信息
-          </Text>
-          <div style={{ marginBottom: '12px' }}>
-            <TextArea
-              value={supplementContent}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSupplementContent(e.target.value)}
-              placeholder="请输入你对现状分析的补充或反馈..."
-              rows={4}
-              style={{ marginBottom: '8px' }}
-            />
-            <Button
-              type="primary"
-              onClick={handleSaveSupplement}
-              loading={isSavingSupplement}
-              disabled={!supplementContent.trim() || !readingId.trim()}
-              style={{ width: '100%' }}
-            >
-              {isSavingSupplement ? '保存中...' : '保存补充信息'}
-            </Button>
-          </div>
-          
-          {/* 保存状态显示 */}
-          {supplementSaveStatus && (
-            <Alert
-              message={supplementSaveStatus.message}
-              type={supplementSaveStatus.success ? 'success' : 'error'}
-              showIcon
-              style={{ marginTop: '8px' }}
-            />
-          )}
-        </div>
 
         {/* AI原始响应 */}
         {result.apiResponse?.data?.ai_raw_response && (
@@ -600,6 +566,47 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
           />
         </Col>
       </Row>
+
+      {/* 现状补充输入区域 */}
+      <Card 
+        title="现状补充信息" 
+        size="small" 
+        style={{ marginTop: 16 }}
+        extra={
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            可以随时保存补充信息
+          </Text>
+        }
+      >
+        <div style={{ marginBottom: '12px' }}>
+          <TextArea
+            value={supplementContent}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSupplementContent(e.target.value)}
+            placeholder="请输入你对现状分析的补充或反馈..."
+            rows={4}
+            style={{ marginBottom: '8px' }}
+          />
+          <Button
+            type="primary"
+            onClick={handleSaveSupplement}
+            loading={isSavingSupplement}
+            disabled={!supplementContent.trim() || !readingId.trim()}
+            style={{ width: '100%' }}
+          >
+            {isSavingSupplement ? '保存中...' : '保存补充信息'}
+          </Button>
+        </div>
+        
+        {/* 保存状态显示 */}
+        {supplementSaveStatus && (
+          <Alert
+            message={supplementSaveStatus.message}
+            type={supplementSaveStatus.success ? 'success' : 'error'}
+            showIcon
+            style={{ marginTop: '8px' }}
+          />
+        )}
+      </Card>
 
       {/* 配置编辑区域 */}
       {renderConfigEditor()}
