@@ -332,7 +332,7 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
                 <Tag style={{ margin: '4px' }}>{'{ben_gua_prompt}'}: 本卦提示</Tag>
                 <Tag style={{ margin: '4px' }}>{'{zhi_gua_name}'}: 之卦名称</Tag>
                 <Tag style={{ margin: '4px' }}>{'{zhi_gua_prompt}'}: 之卦提示</Tag>
-                <Tag style={{ margin: '4px' }}>{'{yao_prompt_text}'}: 变爻提示文本</Tag>
+                <Tag style={{ margin: '4px' }}>{'{yao_name_text}'}: 变爻名称文本</Tag>
                 <Tag style={{ margin: '4px' }}>{'{expanded_question_text}'}: 扩写问题文本</Tag>
                 <Tag style={{ margin: '4px' }}>{'{question_guidance}'}: 问题指导</Tag>
                 <Tag style={{ margin: '4px' }}>{'{final_question}'}: 最终问题</Tag>
@@ -554,7 +554,7 @@ const SituationAnalysisModule: React.FC<SituationAnalysisModuleProps> = ({
               {key: "{ben_gua_prompt}", description: "本卦提示"},
               {key: "{zhi_gua_name}", description: "之卦名称"},
               {key: "{zhi_gua_prompt}", description: "之卦提示"},
-              {key: "{yao_prompt_text}", description: "变爻提示文本"},
+              {key: "{yao_name_text}", description: "变爻名称文本"},
               {key: "{expanded_question_text}", description: "扩写问题文本"},
               {key: "{question_guidance}", description: "问题指导"},
               {key: "{final_question}", description: "最终问题"}
