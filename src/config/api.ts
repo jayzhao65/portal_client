@@ -5,8 +5,7 @@
 const getApiBaseUrl = (): string => {
   const isProd = import.meta.env.PROD;
   const mode = import.meta.env.MODE;
-  const defaultBackendUrl = 'https://yilore.lichen.xin';
-  
+  const defaultBackendUrl = 'https://test.yilore.lichen.xin';
   // 开发环境强制使用localhost:8000
   if (!isProd) {
     console.log('🔧 开发环境强制使用: http://localhost:8000');
