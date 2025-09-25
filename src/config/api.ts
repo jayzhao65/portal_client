@@ -5,24 +5,31 @@
 const getApiBaseUrl = (): string => {
   const isProd = import.meta.env.PROD;
   const mode = import.meta.env.MODE;
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
   const defaultBackendUrl = 'https://test.yilore.lichen.xin';
-  // 开发环境强制使用localhost:8000
-  if (!isProd) {
-    console.log('🔧 开发环境强制使用: http://localhost:8000');
-    return 'http://localhost:8000';
+  
+  // 优先使用环境变量配置的URL
+  if (envUrl) {
+    console.log('🔧 使用环境变量配置的API地址:', envUrl);
+    return envUrl;
   }
   
-  // 生产环境：强制使用正确的API地址
+  // 开发环境默认使用测试服务器
+  if (!isProd) {
+    console.log('🔧 开发环境使用测试服务器: http://test.yilore.lichen.xin:8002');
+    return 'http://test.yilore.lichen.xin:8002';
+  }
+  
+  // 生产环境：使用默认的API地址
   console.log('🔍 API配置调试信息:', {
     isProd,
     mode,
-    __API_BASE_URL__: typeof __API_BASE_URL__ !== 'undefined' ? __API_BASE_URL__ : 'undefined',
-    envUrl: import.meta.env.VITE_API_BASE_URL,
+    envUrl,
     defaultBackendUrl,
     finalApiUrl: defaultBackendUrl
   });
   
-  console.log('✅ 生产环境强制使用API地址:', defaultBackendUrl);
+  console.log('✅ 生产环境使用API地址:', defaultBackendUrl);
   return defaultBackendUrl;
 };
 
