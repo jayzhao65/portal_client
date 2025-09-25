@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
-  const apiBaseUrl = env.VITE_API_BASE_URL || 'https://test.yilore.lichen.xin'
+  const apiBaseUrl = env.VITE_API_BASE_URL || 'http://test.yilore.lichen.xin:8002'
   
   console.log('🔧 Vite配置 - API基础URL:', apiBaseUrl)
   

@@ -4,15 +4,29 @@
 // 获取API基础URL
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  const defaultUrl = 'http://test.yilore.lichen.xin:8002';
   
-  // 使用环境变量配置的URL，如果没有则使用默认的测试服务器地址
+  // 智能协议检测
+  const isProduction = import.meta.env.PROD;
+  const currentProtocol = window.location.protocol;
+  
+  // 根据当前页面协议和部署环境选择API协议
+  let protocol = 'http';
+  if (isProduction && currentProtocol === 'https:') {
+    protocol = 'https';
+  } else if (!isProduction) {
+    protocol = 'http';  // 开发环境使用HTTP
+  }
+  
+  const defaultUrl = `${protocol}://test.yilore.lichen.xin:8002`;
   const finalUrl = envUrl || defaultUrl;
   
   console.log('🔧 工作台API配置:', {
     envUrl,
     defaultUrl,
-    finalUrl
+    finalUrl,
+    isProduction,
+    currentProtocol,
+    selectedProtocol: protocol
   });
   
   return finalUrl;
