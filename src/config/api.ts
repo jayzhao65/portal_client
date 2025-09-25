@@ -3,33 +3,28 @@
 
 // 获取API基础URL
 const getApiBaseUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  const isProd = import.meta.env.PROD;
+  const mode = import.meta.env.MODE;
+  const defaultBackendUrl = 'https://yilore.lichen.xin';
   
-  // 智能协议检测
-  const isProduction = import.meta.env.PROD;
-  const currentProtocol = window.location.protocol;
-  
-  // 根据当前页面协议和部署环境选择API协议
-  let protocol = 'http';
-  if (isProduction && currentProtocol === 'https:') {
-    protocol = 'https';
-  } else if (!isProduction) {
-    protocol = 'http';  // 开发环境使用HTTP
+  // 开发环境强制使用localhost:8000
+  if (!isProd) {
+    console.log('🔧 开发环境强制使用: http://localhost:8000');
+    return 'http://localhost:8000';
   }
   
-  const defaultUrl = `${protocol}://test.yilore.lichen.xin:8002`;
-  const finalUrl = envUrl || defaultUrl;
-  
-  console.log('🔧 工作台API配置:', {
-    envUrl,
-    defaultUrl,
-    finalUrl,
-    isProduction,
-    currentProtocol,
-    selectedProtocol: protocol
+  // 生产环境：强制使用正确的API地址
+  console.log('🔍 API配置调试信息:', {
+    isProd,
+    mode,
+    __API_BASE_URL__: typeof __API_BASE_URL__ !== 'undefined' ? __API_BASE_URL__ : 'undefined',
+    envUrl: import.meta.env.VITE_API_BASE_URL,
+    defaultBackendUrl,
+    finalApiUrl: defaultBackendUrl
   });
   
-  return finalUrl;
+  console.log('✅ 生产环境强制使用API地址:', defaultBackendUrl);
+  return defaultBackendUrl;
 };
 
 // 导出API基础URL
