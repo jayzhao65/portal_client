@@ -1,1 +1,11 @@
-/*    /index.html   200
+# SPA路由重定向配置
+# 将所有路由重定向到index.html，让React Router处理客户端路由
+
+# 静态资源直接访问
+/assets/*   /assets/:splat   200
+
+# API请求代理（如果需要）
+/api/*      https://test.yilore.lichen.xin:8002/api/:splat   200
+
+# 所有其他路由都重定向到index.html
+/*          /index.html      200

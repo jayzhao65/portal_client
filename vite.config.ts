@@ -28,7 +28,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: undefined
         }
-      }
+      },
+      // 确保构建后的文件结构正确
+      outDir: 'dist',
+      assetsDir: 'assets'
     },
     define: {
       // 让前端代码能访问环境变量
