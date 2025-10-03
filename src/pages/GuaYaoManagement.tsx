@@ -37,7 +37,6 @@ interface Yao {
   position: number;      // 爻位(1-6)
   yao_name: string;
   yao_prompt: string;
-  gua_name?: string;     // 卦名，用于显示
 }
 
 // 卦和爻管理页面组件
@@ -290,8 +289,8 @@ function GuaYaoManagement() {
       key: 'gua_position',
       width: 150,
       render: (gua_position: number, record: Yao) => {
-        // 显示卦名和位置
-        return `第${gua_position}卦 - ${record.gua_name || '未知卦'}`;
+        // 显示卦位置
+        return `第${gua_position}卦`;
       },
     },
     {

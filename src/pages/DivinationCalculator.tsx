@@ -37,7 +37,6 @@ interface Yao {
   position: number;
   yao_name: string;
   yao_prompt: string;
-  gua_name?: string;
 }
 
 // 八卦对应关系
@@ -440,7 +439,7 @@ function DivinationCalculator() {
           <Card size="small" title="变爻信息" style={{ marginBottom: '16px' }}>
             <p><Text strong>爻名：</Text>{result.yao.yao_name}</p>
             <p><Text strong>位置：</Text>第{result.yao.position}爻</p>
-            <p><Text strong>所属卦：</Text>{result.yao.gua_name}</p>
+            <p><Text strong>所属卦位置：</Text>第{result.yao.gua_position}卦</p>
             {result.yao.yao_prompt && (
               <p><Text strong>爻辞：</Text>{result.yao.yao_prompt}</p>
             )}
