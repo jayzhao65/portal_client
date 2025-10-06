@@ -130,6 +130,46 @@ function DivinationCalculator() {
     return yaos.find(yao => yao.gua_position === guaPosition && yao.position === yaoPosition) || null;
   };
 
+  // 根据本卦二进制码和爻位置查找爻信息（更准确的方法）
+  const findYaoByBinary = (benGuaBinary: string, yaoPosition: number): Yao | null => {
+    // 先找到对应的本卦信息
+    const benGuaInfo = findGuaByBinary(benGuaBinary);
+    if (!benGuaInfo) {
+      console.log('❌ 未找到本卦信息:', benGuaBinary);
+      return null;
+    }
+    
+    console.log('🔍 查找变爻:', {
+      benGuaBinary,
+      benGuaPosition: benGuaInfo.position,
+      yaoPosition,
+      benGuaName: benGuaInfo.gua_name
+    });
+    
+    // 使用本卦的position查找对应的爻
+    const foundYao = yaos.find(yao => yao.gua_position === benGuaInfo.position && yao.position === yaoPosition);
+    
+    if (foundYao) {
+      console.log('✅ 找到变爻:', {
+        yaoName: foundYao.yao_name,
+        guaPosition: foundYao.gua_position,
+        yaoPosition: foundYao.position
+      });
+    } else {
+      console.log('❌ 未找到变爻，调试信息:', {
+        总爻数: yaos.length,
+        匹配条件: `gua_position === ${benGuaInfo.position} && position === ${yaoPosition}`,
+        前5个爻信息: yaos.slice(0, 5).map(yao => ({
+          yaoName: yao.yao_name,
+          guaPosition: yao.gua_position,
+          yaoPosition: yao.position
+        }))
+      });
+    }
+    
+    return foundYao || null;
+  };
+
   // 将二进制码的某一位取反
   const flipBinaryBit = (binaryCode: string, position: number): string => {
     const chars = binaryCode.split('');
@@ -220,10 +260,10 @@ function DivinationCalculator() {
       }
       console.log('之卦信息:', zhiGuaInfo);
 
-      // 第七步：查询变爻信息
-      const yaoInfo = findYaoByPosition(benGuaInfo.position, yaoRemainder);
+      // 第七步：查询变爻信息（使用二进制码查找，更准确）
+      const yaoInfo = findYaoByBinary(benGuaBinary, yaoRemainder);
       if (!yaoInfo) {
-        setError(`未找到变爻信息（卦位置：${benGuaInfo.position}，爻位置：${yaoRemainder}）`);
+        setError(`未找到变爻信息（本卦二进制：${benGuaBinary}，爻位置：${yaoRemainder}）`);
         return;
       }
       console.log('变爻信息:', yaoInfo);
