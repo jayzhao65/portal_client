@@ -88,7 +88,8 @@ const DivinationModule: React.FC<DivinationModuleProps> = ({
         headers: {
           'Content-Type': 'application/json',
           'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
+          'X-Dev-Token': 'dev-secret-2024',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'  // 设置语言为中文
         },
         body: JSON.stringify({
           reading_id: readingId.trim(),

@@ -4,23 +4,26 @@
 // 获取API基础URL
 const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  
-  // 智能协议检测
   const isProduction = import.meta.env.PROD;
-  const currentProtocol = window.location.protocol;
   
-  // 根据当前页面协议和部署环境选择API协议
-  let protocol = 'http';
-  if (isProduction && currentProtocol === 'https:') {
-    protocol = 'https';
-  } else if (!isProduction) {
-    protocol = 'http';  // 开发环境使用HTTP
+  // 开发环境使用代理，生产环境使用完整URL
+  if (!isProduction) {
+    // 开发环境：使用 Vite 代理，只需要相对路径
+    console.log('🔧 开发环境：使用 Vite 代理');
+    return '';  // 空字符串表示使用当前域名（localhost:3000）
   }
   
-  const defaultUrl = `${protocol}://test.yilore.lichen.xin:8002`;
+  // 生产环境：使用完整URL
+  const currentProtocol = window.location.protocol;
+  let protocol = 'http';
+  if (currentProtocol === 'https:') {
+    protocol = 'https';
+  }
+  
+  const defaultUrl = `${protocol}://test.yilore.lichen.xin`;
   const finalUrl = envUrl || defaultUrl;
   
-  console.log('🔧 工作台API配置:', {
+  console.log('🔧 生产环境API配置:', {
     envUrl,
     defaultUrl,
     finalUrl,
