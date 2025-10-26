@@ -28,6 +28,8 @@ interface Gua {
   position: number;
   binary_code: string;
   gua_ci?: string;
+  gua_daily?: string;      // 每日指引（中文）
+  gua_daily_en?: string;   // 每日指引（英文）
 }
 
 // 定义爻数据类型 - 更新为匹配yao_info表结构
@@ -37,6 +39,8 @@ interface Yao {
   position: number;      // 爻位(1-6)
   yao_name: string;
   yao_prompt: string;
+  yao_daily?: string;    // 每日指引（中文）
+  yao_daily_en?: string; // 每日指引（英文）
 }
 
 // 卦和爻管理页面组件
@@ -122,7 +126,9 @@ function GuaYaoManagement() {
         gua_prompt: gua.gua_prompt,
         position: gua.position,
         binary_code: gua.binary_code,
-        gua_ci: gua.gua_ci || ''
+        gua_ci: gua.gua_ci || '',
+        gua_daily: gua.gua_daily || '',        // 每日指引（中文）
+        gua_daily_en: gua.gua_daily_en || ''   // 每日指引（英文）
       });
     } else {
       const yao = item as Yao;
@@ -130,7 +136,9 @@ function GuaYaoManagement() {
         gua_position: yao.gua_position,
         position: yao.position,
         yao_name: yao.yao_name,
-        yao_prompt: yao.yao_prompt
+        yao_prompt: yao.yao_prompt,
+        yao_daily: yao.yao_daily || '',        // 每日指引（中文）
+        yao_daily_en: yao.yao_daily_en || ''   // 每日指引（英文）
       });
     }
   };
@@ -168,13 +176,17 @@ function GuaYaoManagement() {
         data = {
           gua_name: values.gua_name,
           gua_prompt: values.gua_prompt,
-          gua_ci: values.gua_ci
+          gua_ci: values.gua_ci,
+          gua_daily: values.gua_daily,        // 每日指引（中文）
+          gua_daily_en: values.gua_daily_en   // 每日指引（英文）
         };
         endpoint = createApiUrl(`/api/v1/gua/${editingItem.id}`);
       } else {
         data = {
           yao_name: values.yao_name,
-          yao_prompt: values.yao_prompt
+          yao_prompt: values.yao_prompt,
+          yao_daily: values.yao_daily,        // 每日指引（中文）
+          yao_daily_en: values.yao_daily_en   // 每日指引（英文）
         };
         endpoint = createApiUrl(`/api/v1/yao/${editingItem.id}`);
       }
@@ -206,12 +218,6 @@ function GuaYaoManagement() {
   // 卦表格列配置
   const guaColumns: ColumnsType<Gua> = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 200,
-    },
-    {
       title: '卦名',
       dataIndex: 'gua_name',
       key: 'gua_name',
@@ -233,6 +239,20 @@ function GuaYaoManagement() {
       dataIndex: 'gua_ci',
       key: 'gua_ci',
       ellipsis: true,
+    },
+    {
+      title: '每日指引（中文）',
+      dataIndex: 'gua_daily',
+      key: 'gua_daily',
+      ellipsis: true,
+      width: 150,
+    },
+    {
+      title: '每日指引（英文）',
+      dataIndex: 'gua_daily_en',
+      key: 'gua_daily_en',
+      ellipsis: true,
+      width: 150,
     },
     {
       title: 'Prompt',
@@ -278,12 +298,6 @@ function GuaYaoManagement() {
   // 爻表格列配置
   const yaoColumns: ColumnsType<Yao> = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 200,
-    },
-    {
       title: '所属卦',
       dataIndex: 'gua_position',
       key: 'gua_position',
@@ -303,6 +317,20 @@ function GuaYaoManagement() {
       title: '爻名',
       dataIndex: 'yao_name',
       key: 'yao_name',
+    },
+    {
+      title: '每日指引（中文）',
+      dataIndex: 'yao_daily',
+      key: 'yao_daily',
+      ellipsis: true,
+      width: 150,
+    },
+    {
+      title: '每日指引（英文）',
+      dataIndex: 'yao_daily_en',
+      key: 'yao_daily_en',
+      ellipsis: true,
+      width: 150,
     },
     {
       title: 'Prompt',
@@ -438,6 +466,22 @@ function GuaYaoManagement() {
               </Form.Item>
 
               <Form.Item
+                name="gua_daily"
+                label="每日指引（中文）"
+                rules={[{ required: false }]}
+              >
+                <Input.TextArea rows={3} placeholder="请输入每日指引的中文文案，如：今日宜..." />
+              </Form.Item>
+
+              <Form.Item
+                name="gua_daily_en"
+                label="每日指引（英文）"
+                rules={[{ required: false }]}
+              >
+                <Input.TextArea rows={3} placeholder="Please enter the daily guidance in English, e.g., Today is favorable for..." />
+              </Form.Item>
+
+              <Form.Item
                 name="gua_prompt"
                 label="Prompt内容"
                 rules={[{ required: true, message: '请输入Prompt内容' }]}
@@ -482,6 +526,22 @@ function GuaYaoManagement() {
                 rules={[{ required: true, message: '请输入爻名' }]}
               >
                 <Input placeholder="请输入爻名" />
+              </Form.Item>
+
+              <Form.Item
+                name="yao_daily"
+                label="每日指引（中文）"
+                rules={[{ required: false }]}
+              >
+                <Input.TextArea rows={3} placeholder="请输入每日指引的中文文案，如：今日宜..." />
+              </Form.Item>
+
+              <Form.Item
+                name="yao_daily_en"
+                label="每日指引（英文）"
+                rules={[{ required: false }]}
+              >
+                <Input.TextArea rows={3} placeholder="Please enter the daily guidance in English, e.g., Today is favorable for..." />
               </Form.Item>
 
               <Form.Item
