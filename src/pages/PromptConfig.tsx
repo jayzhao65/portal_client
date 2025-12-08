@@ -56,7 +56,9 @@ const STAGE_NAMES = [
   "扩写/位置生成", 
   "现状分析",
   "占卜解读",
-  "追问"
+  "追问",
+  "图片识别",
+  "图片占卜解读"
 ];
 
 // 阶段占位符定义
@@ -81,6 +83,19 @@ const STAGE_PLACEHOLDERS = {
   "追问": [
     {key: "{reading_id}", description: "Reading记录ID"},
     {key: "{previous_analysis}", description: "之前的分析结果"}
+  ],
+  "图片识别": [
+    {key: "{intent_tag}", description: "用户的意图标签（如：事业、感情、财运）"}
+  ],
+  "图片占卜解读": [
+    {key: "{intent_tag}", description: "用户的意图标签"},
+    {key: "{ben_gua_name}", description: "本卦名称（64卦）"},
+    {key: "{ben_gua_ci}", description: "本卦卦辞"},
+    {key: "{zhi_gua_name}", description: "之卦名称（64卦）"},
+    {key: "{zhi_gua_ci}", description: "之卦卦辞"},
+    {key: "{moving_yao_name}", description: "变爻名称"},
+    {key: "{moving_yao_position}", description: "变爻位置（1-6）"},
+    {key: "{calculation_process}", description: "计算过程描述"}
   ]
 };
 

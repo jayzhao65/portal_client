@@ -41,12 +41,24 @@ cd portal_client
 npm install
 ```
 
-### 2. 启动开发服务器
+### 2. 配置环境变量（可选）
+创建 `.env` 文件（可选，如果不创建则使用默认密码）：
+```bash
+# Portal 登录密码（默认：dev-secret-2024）
+VITE_PORTAL_PASSWORD=your-custom-password
+```
+
+### 3. 启动开发服务器
 ```bash
 npm run dev
 ```
 
 项目将在 http://localhost:3000 启动
+
+### 4. 登录系统
+- 访问任何页面时，如果未登录会自动跳转到登录页
+- 默认密码：`dev-secret-2024`（可通过环境变量 `VITE_PORTAL_PASSWORD` 修改）
+- 登录状态保存在 localStorage 中，刷新页面后仍保持登录
 
 ### 3. 构建生产版本
 ```bash
@@ -68,17 +80,25 @@ uvicorn main:app --reload
 ```
 portal_client/
 ├── src/
-│   ├── pages/          # 页面组件
+│   ├── pages/              # 页面组件
+│   │   ├── Login.tsx       # 登录页面
 │   │   ├── UserManagement.tsx
 │   │   ├── GuaYaoManagement.tsx
 │   │   ├── QuestionClarify.tsx
 │   │   └── Divination.tsx
-│   ├── App.tsx         # 主应用组件
-│   ├── main.tsx        # 入口文件
-│   └── index.css       # 全局样式
+│   ├── components/         # 组件
+│   │   └── ProtectedRoute.tsx  # 路由保护组件
+│   ├── services/           # 服务
+│   │   └── authService.ts  # 认证服务
+│   ├── config/             # 配置
+│   │   └── api.ts          # API 配置
+│   ├── App.tsx             # 主应用组件
+│   ├── main.tsx            # 入口文件
+│   └── index.css            # 全局样式
 ├── package.json
 ├── vite.config.ts
-└── tsconfig.json
+├── tsconfig.json
+└── .env                     # 环境变量（可选）
 ```
 
 ## 开发说明
