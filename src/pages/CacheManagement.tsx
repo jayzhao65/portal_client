@@ -27,11 +27,9 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined
 } from '@ant-design/icons';
+import { createApiUrl } from '../config/api';
 
 const { Title, Text, Paragraph } = Typography;
-
-// API 基础路径
-const API_BASE_URL = '';
 
 // 缓存统计数据类型
 interface CacheTypeStats {
@@ -86,7 +84,7 @@ function CacheManagement() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cache/stats`, {
+      const response = await fetch(createApiUrl('/api/v1/admin/cache/stats'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +115,7 @@ function CacheManagement() {
   const clearCache = async (cacheType: string | null, key: string | null = null) => {
     setClearing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cache/clear`, {
+      const response = await fetch(createApiUrl('/api/v1/admin/cache/clear'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +165,7 @@ function CacheManagement() {
   const fetchDetails = async () => {
     setLoadingDetails(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/cache/details`, {
+      const response = await fetch(createApiUrl('/api/v1/admin/cache/details'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
