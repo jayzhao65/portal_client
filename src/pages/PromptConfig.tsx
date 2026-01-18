@@ -57,6 +57,7 @@ const STAGE_NAMES = [
   "现状分析",
   "占卜解读",
   "追问",
+  "每日指引追问",
   "图片识别",
   "图片占卜解读"
 ];
@@ -83,6 +84,15 @@ const STAGE_PLACEHOLDERS = {
   "追问": [
     {key: "{reading_id}", description: "Reading记录ID"},
     {key: "{previous_analysis}", description: "之前的分析结果"}
+  ],
+  "每日指引追问": [
+    {key: "{user_rizhu}", description: "用户日柱"},
+    {key: "{today_day_gan}", description: "今日日干"},
+    {key: "{ten_gold}", description: "十神"},
+    {key: "{gua_name}", description: "卦名"},
+    {key: "{gua_daily_guidance}", description: "指引文案"},
+    {key: "{chat_history_str}", description: "对话历史"},
+    {key: "{user_question}", description: "用户追问问题"}
   ],
   "图片识别": [
     {key: "{intent_tag}", description: "用户的意图标签（如：事业、感情、财运）"}

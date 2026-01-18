@@ -42,6 +42,7 @@ import DivinationModule from '../components/DivinationModule';
 import SituationAnalysisModule from '../components/SituationAnalysisModule';
 import AnswerGenerationModule from '../components/AnswerGenerationModule';
 import FollowUpModule from '../components/FollowUpModule';
+import DailyGuidanceFollowupModule from '../components/DailyGuidanceFollowupModule';
 
 // 导入占位符显示模块
 import PlaceholderDisplayModule from '../components/PlaceholderDisplayModule';
@@ -72,7 +73,8 @@ const STAGE_NAMES = [
   "扩写/位置生成", 
   "现状分析",
   "占卜解读",
-  "追问"
+  "追问",
+  "每日指引追问"
 ];
 
 // 阶段占位符定义
@@ -91,12 +93,22 @@ const STAGE_PLACEHOLDERS = {
     {key: "{divination_result}", description: "占卜结果"}
   ],
   "占卜解读": [
-    {key: "{reading_id}", description: "Reading记录ID"},
-    {key: "{situation_analysis}", description: "现状分析结果"}
+    {key: "{final_question}", description: "最终问题"},
+    {key: "{situation_analysis}", description: "现状分析结果"},
+    {key: "{historical_contexts}", description: "历史相似问题上下文（JSON格式）"}
   ],
   "追问": [
     {key: "{reading_id}", description: "Reading记录ID"},
     {key: "{previous_analysis}", description: "之前的分析结果"}
+  ],
+  "每日指引追问": [
+    {key: "{user_rizhu}", description: "用户日柱"},
+    {key: "{today_day_gan}", description: "今日日干"},
+    {key: "{ten_gold}", description: "十神"},
+    {key: "{gua_name}", description: "卦名"},
+    {key: "{gua_daily_guidance}", description: "指引文案"},
+    {key: "{chat_history_str}", description: "对话历史"},
+    {key: "{user_question}", description: "用户追问问题"}
   ]
 };
 
@@ -976,6 +988,16 @@ function FlowTest() {
             setSaveVersionModalVisible={setSaveVersionModalVisible}
             setGlobalEditingConfig={setGlobalEditingConfig}
             globalReadingId={globalReadingId}
+          />
+          
+          {/* 每日指引追问测试模块（第七个模块） */}
+          <DailyGuidanceFollowupModule
+            configs={configs}
+            availableModels={availableModels}
+            testResults={testResults}
+            setTestResults={setTestResults}
+            setSaveVersionModalVisible={setSaveVersionModalVisible}
+            setGlobalEditingConfig={setGlobalEditingConfig}
           />
           
           {/* 其他模块待开发 */}

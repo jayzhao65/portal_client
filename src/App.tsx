@@ -13,7 +13,8 @@ import {
   MenuUnfoldOutlined,
   CloudServerOutlined,
   ShareAltOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 
 // 导入页面组件
@@ -24,6 +25,7 @@ import DivinationCalculator from './pages/DivinationCalculator';
 import ImageDivination from './pages/ImageDivination';
 import CacheManagement from './pages/CacheManagement';
 import ShareCodeManagement from './pages/ShareCodeManagement';
+import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
@@ -67,6 +69,11 @@ const menuItems = [
     key: '/share-code-management',
     icon: <ShareAltOutlined />,
     label: <Link to="/share-code-management">分享码管理</Link>
+  },
+  {
+    key: '/dashboard',
+    icon: <DashboardOutlined />,
+    label: <Link to="/dashboard">数据看板</Link>
   }
 ];
 
@@ -204,6 +211,11 @@ function MainLayout() {
               <Route path="/share-code-management" element={
                 <ProtectedRoute>
                   <ShareCodeManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
             </Routes>

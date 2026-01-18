@@ -43,6 +43,11 @@ interface CacheStats {
   prompt: CacheTypeStats;
   gua: CacheTypeStats;
   yao: CacheTypeStats;
+  heluo_gua: CacheTypeStats;  // Heluo 卦象缓存（独立）
+  heluo_yao: CacheTypeStats;  // Heluo 爻位缓存（独立）
+  rizhu: CacheTypeStats;
+  daily_guidance: CacheTypeStats;  // 每日指引缓存
+  gua_by_position: CacheTypeStats;  // 按位置查询卦信息缓存
   last_cleared_at: string | null;
   total_cached_items: number;
 }
@@ -61,6 +66,26 @@ interface CacheDetails {
     keys: string[];
     count: number;
   };
+  heluo_gua: {
+    keys: string[];
+    count: number;
+  };
+  heluo_yao: {
+    keys: string[];
+    count: number;
+  };
+  rizhu: {
+    keys: string[];
+    count: number;
+  };
+  daily_guidance: {
+    keys: string[];
+    count: number;
+  };
+  gua_by_position: {
+    keys: string[];
+    count: number;
+  };
 }
 
 // 清除结果类型
@@ -68,6 +93,11 @@ interface ClearResult {
   prompt?: number;
   gua?: number;
   yao?: number;
+  heluo_gua?: number;
+  heluo_yao?: number;
+  rizhu?: number;
+  daily_guidance?: number;
+  gua_by_position?: number;
 }
 
 function CacheManagement() {
@@ -153,7 +183,7 @@ function CacheManagement() {
     Modal.confirm({
       title: '确认清除所有缓存？',
       icon: <ExclamationCircleOutlined />,
-      content: '这将清除所有 Prompt 配置、卦象信息和爻位信息的缓存。下次请求时会重新从数据库加载。',
+      content: '这将清除所有缓存（Prompt配置、占卜卦象/爻位、河洛卦象/爻位、日柱信息、每日指引、按位置查询的卦信息）。下次请求时会重新从数据库加载。',
       okText: '确认清除',
       okType: 'danger',
       cancelText: '取消',
@@ -268,7 +298,7 @@ function CacheManagement() {
           缓存管理
         </Title>
         <Paragraph type="secondary">
-          管理服务器内存缓存，包括 Prompt 配置、卦象信息和爻位信息。
+          管理服务器内存缓存，包括 Prompt 配置、占卜卦象/爻位、河洛卦象/爻位、日柱信息、每日指引和按位置查询的卦信息。
           缓存永不过期，需要手动清除才会重新从数据库加载。
         </Paragraph>
       </div>
@@ -342,35 +372,89 @@ function CacheManagement() {
 
       {/* 缓存类型卡片 */}
       {stats && (
-        <Row gutter={[24, 24]}>
-          <Col xs={24} md={8}>
-            {renderCacheCard(
-              'Prompt 配置缓存',
-              'prompt',
-              stats.prompt,
-              <DatabaseOutlined style={{ color: '#1890ff' }} />,
-              '#1890ff'
-            )}
-          </Col>
-          <Col xs={24} md={8}>
-            {renderCacheCard(
-              '卦象信息缓存',
-              'gua',
-              stats.gua,
-              <DatabaseOutlined style={{ color: '#722ed1' }} />,
-              '#722ed1'
-            )}
-          </Col>
-          <Col xs={24} md={8}>
-            {renderCacheCard(
-              '爻位信息缓存',
-              'yao',
-              stats.yao,
-              <DatabaseOutlined style={{ color: '#eb2f96' }} />,
-              '#eb2f96'
-            )}
-          </Col>
-        </Row>
+        <>
+          {/* 第一行：占卜计算相关缓存 */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                'Prompt 配置缓存',
+                'prompt',
+                stats.prompt,
+                <DatabaseOutlined style={{ color: '#1890ff' }} />,
+                '#1890ff'
+              )}
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '卦象缓存（占卜）',
+                'gua',
+                stats.gua,
+                <DatabaseOutlined style={{ color: '#722ed1' }} />,
+                '#722ed1'
+              )}
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '爻位缓存（占卜）',
+                'yao',
+                stats.yao,
+                <DatabaseOutlined style={{ color: '#eb2f96' }} />,
+                '#eb2f96'
+              )}
+            </Col>
+          </Row>
+          {/* 第二行：河洛理数相关缓存 */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '卦象缓存（河洛）',
+                'heluo_gua',
+                stats.heluo_gua,
+                <DatabaseOutlined style={{ color: '#fa8c16' }} />,
+                '#fa8c16'
+              )}
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '爻位缓存（河洛）',
+                'heluo_yao',
+                stats.heluo_yao,
+                <DatabaseOutlined style={{ color: '#13c2c2' }} />,
+                '#13c2c2'
+              )}
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '日柱信息缓存',
+                'rizhu',
+                stats.rizhu,
+                <DatabaseOutlined style={{ color: '#52c41a' }} />,
+                '#52c41a'
+              )}
+            </Col>
+          </Row>
+          {/* 第三行：每日指引相关缓存 */}
+          <Row gutter={[24, 24]}>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '每日指引缓存',
+                'daily_guidance',
+                stats.daily_guidance,
+                <DatabaseOutlined style={{ color: '#f5222d' }} />,
+                '#f5222d'
+              )}
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              {renderCacheCard(
+                '卦信息缓存（按位置）',
+                'gua_by_position',
+                stats.gua_by_position,
+                <DatabaseOutlined style={{ color: '#2f54eb' }} />,
+                '#2f54eb'
+              )}
+            </Col>
+          </Row>
+        </>
       )}
 
       {/* 使用说明 */}
@@ -383,10 +467,25 @@ function CacheManagement() {
             <Text strong>Prompt 配置：</Text> 通过工作台修改了 Prompt 配置，或在 Supabase 中直接修改了 <code>prompt_configs</code> 表的数据后
           </li>
           <li>
-            <Text strong>卦象信息：</Text> 在 Supabase 中修改了 <code>gua_info</code> 表的数据后
+            <Text strong>卦象缓存（占卜）：</Text> 占卜计算服务使用，修改了 <code>gua_info</code> 表的卦象信息后
           </li>
           <li>
-            <Text strong>爻位信息：</Text> 在 Supabase 中修改了 <code>yao_info</code> 表的数据后
+            <Text strong>爻位缓存（占卜）：</Text> 占卜计算服务使用，修改了 <code>yao_info</code> 表的爻位信息后
+          </li>
+          <li>
+            <Text strong>卦象缓存（河洛）：</Text> 河洛理数服务使用，修改了 <code>gua_info</code> 表的 panci 等字段后
+          </li>
+          <li>
+            <Text strong>爻位缓存（河洛）：</Text> 河洛理数服务使用，修改了 <code>yao_info</code> 表的 panci 等字段后
+          </li>
+          <li>
+            <Text strong>日柱信息：</Text> 在 Supabase 中修改了 <code>rizhu_info</code> 表的数据后
+          </li>
+          <li>
+            <Text strong>每日指引缓存：</Text> 每日指引服务使用，修改了 <code>daily_guidance</code> 表的数据后
+          </li>
+          <li>
+            <Text strong>卦信息缓存（按位置）：</Text> 每日指引服务使用，修改了 <code>gua_info</code> 表的数据后（按 position 查询）
           </li>
         </ul>
         <Alert
@@ -450,12 +549,12 @@ function CacheManagement() {
               )}
             </Card>
 
-            {/* 卦象信息缓存 */}
+            {/* 卦象缓存（占卜） */}
             <Card 
               title={
                 <Space>
                   <DatabaseOutlined style={{ color: '#722ed1' }} />
-                  <span>卦象信息缓存 ({details.gua.count} 条)</span>
+                  <span>卦象缓存（占卜）({details.gua.count} 条)</span>
                 </Space>
               }
               style={{ marginBottom: '16px' }}
@@ -474,20 +573,140 @@ function CacheManagement() {
               )}
             </Card>
 
-            {/* 爻位信息缓存 */}
+            {/* 爻位缓存（占卜） */}
             <Card 
               title={
                 <Space>
                   <DatabaseOutlined style={{ color: '#eb2f96' }} />
-                  <span>爻位信息缓存 ({details.yao.count} 条)</span>
+                  <span>爻位缓存（占卜）({details.yao.count} 条)</span>
                 </Space>
               }
+              style={{ marginBottom: '16px' }}
               size="small"
             >
               {details.yao.keys.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   {details.yao.keys.map((key, index) => (
                     <Tag key={index} color="magenta" style={{ marginBottom: '8px' }}>
+                      {key}
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无缓存</Text>
+              )}
+            </Card>
+
+            {/* 卦象缓存（河洛） */}
+            <Card 
+              title={
+                <Space>
+                  <DatabaseOutlined style={{ color: '#fa8c16' }} />
+                  <span>卦象缓存（河洛）({details.heluo_gua?.count || 0} 条)</span>
+                </Space>
+              }
+              style={{ marginBottom: '16px' }}
+              size="small"
+            >
+              {details.heluo_gua?.keys && details.heluo_gua.keys.length > 0 ? (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {details.heluo_gua.keys.map((key, index) => (
+                    <Tag key={index} color="orange" style={{ marginBottom: '8px' }}>
+                      {key}
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无缓存</Text>
+              )}
+            </Card>
+
+            {/* 爻位缓存（河洛） */}
+            <Card 
+              title={
+                <Space>
+                  <DatabaseOutlined style={{ color: '#13c2c2' }} />
+                  <span>爻位缓存（河洛）({details.heluo_yao?.count || 0} 条)</span>
+                </Space>
+              }
+              style={{ marginBottom: '16px' }}
+              size="small"
+            >
+              {details.heluo_yao?.keys && details.heluo_yao.keys.length > 0 ? (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {details.heluo_yao.keys.map((key, index) => (
+                    <Tag key={index} color="cyan" style={{ marginBottom: '8px' }}>
+                      {key}
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无缓存</Text>
+              )}
+            </Card>
+
+            {/* 日柱信息缓存 */}
+            <Card 
+              title={
+                <Space>
+                  <DatabaseOutlined style={{ color: '#52c41a' }} />
+                  <span>日柱信息缓存 ({details.rizhu.count} 条)</span>
+                </Space>
+              }
+              style={{ marginBottom: '16px' }}
+              size="small"
+            >
+              {details.rizhu.keys.length > 0 ? (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {details.rizhu.keys.map((key, index) => (
+                    <Tag key={index} color="green" style={{ marginBottom: '8px' }}>
+                      {key}
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无缓存</Text>
+              )}
+            </Card>
+
+            {/* 每日指引缓存 */}
+            <Card 
+              title={
+                <Space>
+                  <DatabaseOutlined style={{ color: '#f5222d' }} />
+                  <span>每日指引缓存 ({details.daily_guidance?.count || 0} 条)</span>
+                </Space>
+              }
+              style={{ marginBottom: '16px' }}
+              size="small"
+            >
+              {details.daily_guidance?.keys && details.daily_guidance.keys.length > 0 ? (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {details.daily_guidance.keys.map((key, index) => (
+                    <Tag key={index} color="red" style={{ marginBottom: '8px' }}>
+                      {key}
+                    </Tag>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无缓存</Text>
+              )}
+            </Card>
+
+            {/* 卦信息缓存（按位置） */}
+            <Card 
+              title={
+                <Space>
+                  <DatabaseOutlined style={{ color: '#2f54eb' }} />
+                  <span>卦信息缓存（按位置）({details.gua_by_position?.count || 0} 条)</span>
+                </Space>
+              }
+              size="small"
+            >
+              {details.gua_by_position?.keys && details.gua_by_position.keys.length > 0 ? (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {details.gua_by_position.keys.map((key, index) => (
+                    <Tag key={index} color="blue" style={{ marginBottom: '8px' }}>
                       {key}
                     </Tag>
                   ))}

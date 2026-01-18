@@ -101,4 +101,7 @@ export const API_ENDPOINTS = {
   PROMPT_CONFIG_BY_ID: (id: string) => `/api/v1/prompt-configs/${id}`,
   PROMPT_CONFIG_ACTIVATE: (id: string) => `/api/v1/prompt-configs/${id}/activate`,
   PROMPT_CONFIG_MODELS: '/api/v1/prompt-configs/models',
+  
+  // Dashboard数据看板相关
+  DASHBOARD_STATS: '/api/v1/dashboard/stats',
 } as const; 
