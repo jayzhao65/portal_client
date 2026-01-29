@@ -14,7 +14,9 @@ import {
   CloudServerOutlined,
   ShareAltOutlined,
   LogoutOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  AuditOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 
 // 导入页面组件
@@ -25,7 +27,9 @@ import DivinationCalculator from './pages/DivinationCalculator';
 import ImageDivination from './pages/ImageDivination';
 import CacheManagement from './pages/CacheManagement';
 import ShareCodeManagement from './pages/ShareCodeManagement';
+import SocialShareReview from './pages/SocialShareReview';
 import Dashboard from './pages/Dashboard';
+import ModelErrorDashboard from './pages/ModelErrorDashboard';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
@@ -71,9 +75,19 @@ const menuItems = [
     label: <Link to="/share-code-management">分享码管理</Link>
   },
   {
+    key: '/social-share-review',
+    icon: <AuditOutlined />,
+    label: <Link to="/social-share-review">分享审核</Link>
+  },
+  {
     key: '/dashboard',
     icon: <DashboardOutlined />,
     label: <Link to="/dashboard">数据看板</Link>
+  },
+  {
+    key: '/model-errors',
+    icon: <WarningOutlined />,
+    label: <Link to="/model-errors">模型错误看板</Link>
   }
 ];
 
@@ -213,9 +227,19 @@ function MainLayout() {
                   <ShareCodeManagement />
                 </ProtectedRoute>
               } />
+              <Route path="/social-share-review" element={
+                <ProtectedRoute>
+                  <SocialShareReview />
+                </ProtectedRoute>
+              } />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/model-errors" element={
+                <ProtectedRoute>
+                  <ModelErrorDashboard />
                 </ProtectedRoute>
               } />
             </Routes>
