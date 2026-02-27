@@ -32,9 +32,6 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 
-// 导入问题扩写模块
-import QuestionExpandModule from '../components/QuestionExpandModule';
-
 // 导入占卜计算模块
 import DivinationModule from '../components/DivinationModule';
 
@@ -46,6 +43,9 @@ import DailyGuidanceFollowupModule from '../components/DailyGuidanceFollowupModu
 
 // 导入占位符显示模块
 import PlaceholderDisplayModule from '../components/PlaceholderDisplayModule';
+
+// 导入结构化输出编辑器
+import SchemaEditor from '../components/SchemaEditor';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -65,12 +65,12 @@ interface PromptConfig {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  response_format?: any | null;  // 结构化输出配置（JSON Schema）
 }
 
 // 阶段名称定义
 const STAGE_NAMES = [
   "问题验证",
-  "扩写/位置生成", 
   "现状分析",
   "占卜解读",
   "追问",
@@ -82,11 +82,6 @@ const STAGE_PLACEHOLDERS = {
   "问题验证": [
     {key: "{user_tags}", description: "用户标签"},
     {key: "{question}", description: "用户问题"}
-  ],
-  "扩写/位置生成": [
-    {key: "{reading_id}", description: "Reading记录ID"},
-    {key: "{question}", description: "用户问题"},
-    {key: "{user_tags}", description: "用户标签"}
   ],
   "现状分析": [
     {key: "{reading_id}", description: "Reading记录ID"},
@@ -132,11 +127,6 @@ function FlowTest() {
   
   // 问题输入状态
   const [question, setQuestion] = useState<string>('');
-  
-  // 问题扩写状态
-  const [finalQuestion, setFinalQuestion] = useState<string>('');
-  const [readingId, setReadingId] = useState<string>('');
-  const [isExpanding, setIsExpanding] = useState(false);
   
   // 全局reading_id状态 - 第一个环节生成后自动填充到后续环节
   const [globalReadingId, setGlobalReadingId] = useState<string>('');
@@ -243,6 +233,7 @@ function FlowTest() {
         placeholders: processedPlaceholders,
         model_name: configToSave.model_name,
         config: configToSave.config,
+        response_format: configToSave.response_format,
         is_active: false
       };
 
@@ -297,12 +288,13 @@ function FlowTest() {
         },
         body: JSON.stringify({
           question: question.trim(),
-          user_tags: [], // 暂时为空，后续可以添加标签输入
-          prompt_config_id: editingConfig.id, // 传递选中的配置版本ID
-          system_prompt: editingConfig.system_prompt, // 传递系统提示词
-          user_prompt: editingConfig.user_prompt, // 传递用户提示词
-          model_name: editingConfig.model_name, // 传递模型名称
-          ai_model_config: editingConfig.config // 传递模型配置
+          user_tags: [],
+          prompt_config_id: editingConfig.id,
+          system_prompt: editingConfig.system_prompt,
+          user_prompt: editingConfig.user_prompt,
+          model_name: editingConfig.model_name,
+          ai_model_config: editingConfig.config,
+          response_format: editingConfig.response_format
         })
       });
 
@@ -345,8 +337,6 @@ function FlowTest() {
       // 如果生成了reading_id，自动设置到全局状态，供后续环节使用
       if (result.data?.reading_id) {
         setGlobalReadingId(result.data.reading_id);
-        // 同时更新当前环节的reading_id输入框
-        setReadingId(result.data.reading_id);
         message.success(`问题验证完成，已生成Reading ID: ${result.data.reading_id}`);
       } else {
         message.success('问题验证完成');
@@ -416,88 +406,7 @@ function FlowTest() {
     }
   };
 
-  // 处理问题扩写
-  const handleQuestionExpand = async () => {
-    if (!editingConfig) {
-      message.warning('请先选择一个配置版本');
-      return;
-    }
 
-    if (!finalQuestion.trim()) {
-      message.warning('请输入最终问题');
-      return;
-    }
-
-    if (!readingId.trim()) {
-      message.warning('请输入Reading ID');
-      return;
-    }
-
-    setIsExpanding(true);
-    const startTime = Date.now();
-    
-    try {
-      // 调用问题扩写测试API
-      const response = await fetch(createApiUrl('/test/question-expand/expand'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
-        },
-        body: JSON.stringify({
-          final_question: finalQuestion.trim(),
-          reading_id: readingId.trim(),
-          prompt_config_id: editingConfig.id,
-          system_prompt: editingConfig.system_prompt,
-          user_prompt: editingConfig.user_prompt,
-          model_name: editingConfig.model_name,
-          ai_model_config: editingConfig.config
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API调用失败: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const endTime = Date.now();
-      const responseTime = endTime - startTime;
-      
-      // 提取token信息（从API响应中获取）
-      const tokenInfo = {
-        promptTokens: result.test_info?.prompt_tokens || 0,
-        completionTokens: result.test_info?.completion_tokens || 0,
-        totalTokens: result.test_info?.total_tokens || 0
-      };
-      
-      const expandResult = {
-        stage: editingConfig.stage_name,
-        configVersion: editingConfig.version,
-        model: editingConfig.model_name,
-        config: editingConfig.config,
-        systemPrompt: editingConfig.system_prompt,
-        userPrompt: editingConfig.user_prompt,
-        timestamp: new Date().toISOString(),
-        responseTime: responseTime,
-        tokenInfo: tokenInfo,
-        apiResponse: result,
-        finalQuestion: finalQuestion.trim(),
-        readingId: readingId.trim()
-      };
-      
-      setTestResults((prev: any) => ({
-        ...prev,
-        [editingConfig.stage_name]: expandResult
-      }));
-      
-      message.success('问题扩写完成');
-    } catch (error) {
-      message.error(`问题扩写失败: ${error}`);
-    } finally {
-      setIsExpanding(false);
-    }
-  };
 
   // 获取指定阶段的配置
   const getConfigsByStage = (stageName: string) => {
@@ -617,7 +526,12 @@ function FlowTest() {
                           }
                           description={
                             <Space direction="vertical" size="small">
-                              <Text>模型: {config.model_name}</Text>
+                              <Space>
+                                <Text>模型: {config.model_name}</Text>
+                                {config.response_format && (
+                                  <Tag color="geekblue">Schema</Tag>
+                                )}
+                              </Space>
                               <Text type="secondary">
                                 配置: {config.config?.max_tokens ? `max_tokens: ${config.config.max_tokens}` : ''} 
                                 {config.config?.temperature ? `temperature: ${config.config.temperature}` : ''}
@@ -747,6 +661,19 @@ function FlowTest() {
                 </div>
               </Col>
             </Row>
+
+            {/* 结构化输出编辑 */}
+            <div style={{ marginTop: 16 }}>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>结构化输出（JSON Schema）</Text>
+              <SchemaEditor
+                value={editingConfig.response_format || null}
+                onChange={(val) => setEditingConfig((prev: PromptConfig | null) => prev ? {
+                  ...prev,
+                  response_format: val
+                } : null)}
+                stageName={editingConfig.stage_name}
+              />
+            </div>
           </Card>
         )}
 
@@ -936,19 +863,7 @@ function FlowTest() {
           {/* 问题验证测试模块（第一个模块） */}
           {renderQuestionValidationModule()}
           
-          {/* 问题扩写测试模块（第二个模块） */}
-          <QuestionExpandModule
-            configs={configs}
-            availableModels={availableModels}
-            onSaveAsNewVersion={handleSaveAsNewVersion}
-            testResults={testResults}
-            setTestResults={setTestResults}
-            setSaveVersionModalVisible={setSaveVersionModalVisible}
-            setGlobalEditingConfig={setGlobalEditingConfig}
-            globalReadingId={globalReadingId}
-          />
-          
-          {/* 占卜计算测试模块（第三个模块） */}
+          {/* 占卜计算测试模块 */}
           <DivinationModule
             testResults={testResults}
             setTestResults={setTestResults}

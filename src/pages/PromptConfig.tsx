@@ -30,6 +30,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons';
+import SchemaEditor from '../components/SchemaEditor';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -48,6 +49,7 @@ interface PromptConfig {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  response_format?: any | null;  // 结构化输出配置（JSON Schema）
 }
 
 // 阶段名称定义
@@ -119,6 +121,7 @@ function PromptConfig() {
   const [editingConfig, setEditingConfig] = useState<PromptConfig | null>(null);
   const [viewingConfig, setViewingConfig] = useState<PromptConfig | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [responseFormat, setResponseFormat] = useState<any | null>(null);
   const [form] = Form.useForm();
 
   // 获取所有配置
@@ -187,6 +190,7 @@ function PromptConfig() {
   // 新增配置
   const handleAdd = (stageName: string) => {
     setEditingConfig(null);
+    setResponseFormat(null);
     setModalVisible(true);
     form.resetFields();
     form.setFieldsValue({
@@ -205,6 +209,7 @@ function PromptConfig() {
   // 编辑配置
   const handleEdit = (config: PromptConfig) => {
     setEditingConfig(config);
+    setResponseFormat(config.response_format || null);
     setModalVisible(true);
     
     // 处理config字段，转换为表单需要的嵌套格式
@@ -323,6 +328,7 @@ function PromptConfig() {
         placeholders: processedPlaceholders,
         model_name: values.model_name,
         config: processedConfig,
+        response_format: responseFormat,
         is_active: false
       };
       
@@ -515,7 +521,12 @@ function PromptConfig() {
                   }
                   description={
                     <Space direction="vertical" size="small">
-                      <Text>模型: {config.model_name}</Text>
+                      <Space>
+                        <Text>模型: {config.model_name}</Text>
+                        {config.response_format && (
+                          <Tag color="geekblue">Schema</Tag>
+                        )}
+                      </Space>
                       <Text type="secondary">
                         配置: {config.config?.max_tokens ? `max_tokens: ${config.config.max_tokens}` : ''} 
                         {config.config?.temperature ? `temperature: ${config.config.temperature}` : ''}
@@ -671,6 +682,15 @@ function PromptConfig() {
             </Text>
           </div>
 
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>结构化输出（JSON Schema）</Text>
+            <SchemaEditor
+              value={responseFormat}
+              onChange={setResponseFormat}
+              stageName={form.getFieldValue('stage_name')}
+            />
+          </div>
+
           <Form.Item
             name="system_prompt"
             label="System Prompt"
@@ -771,6 +791,17 @@ function PromptConfig() {
                 {viewingConfig.config?.temperature || '未设置'}
               </Col>
             </Row>
+            <Divider />
+            <div>
+              <Text strong>结构化输出（JSON Schema）:</Text>
+              <div style={{ marginTop: '8px' }}>
+                <SchemaEditor
+                  value={viewingConfig.response_format || null}
+                  onChange={() => {}}
+                  readonly
+                />
+              </div>
+            </div>
             <Divider />
             <div>
               <Text strong>System Prompt:</Text>

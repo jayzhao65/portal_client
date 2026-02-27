@@ -22,6 +22,7 @@ import {
 // 导入API配置
 import { createApiUrl } from '../config/api';
 import PlaceholderDisplayModule from './PlaceholderDisplayModule';
+import SchemaEditor from './SchemaEditor';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -39,6 +40,7 @@ interface PromptConfig {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  response_format?: any | null;
 }
 
 // 追问模块组件
@@ -116,7 +118,8 @@ const FollowUpModule: React.FC<FollowUpModuleProps> = ({
           system_prompt: editingConfig.system_prompt,
           user_prompt: editingConfig.user_prompt,
           model_name: editingConfig.model_name,
-          ai_model_config: editingConfig.config
+          ai_model_config: editingConfig.config,
+          response_format: editingConfig.response_format || null
         })
       });
 
@@ -276,6 +279,13 @@ const FollowUpModule: React.FC<FollowUpModuleProps> = ({
             </div>
           </Col>
         </Row>
+
+        {/* 结构化输出 Schema 编辑器 */}
+        <SchemaEditor
+          value={editingConfig.response_format}
+          onChange={(rf) => setEditingConfig({ ...editingConfig, response_format: rf })}
+          readonly={false}
+        />
       </Card>
     );
   };
