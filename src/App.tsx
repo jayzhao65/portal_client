@@ -16,7 +16,8 @@ import {
   LogoutOutlined,
   DashboardOutlined,
   AuditOutlined,
-  WarningOutlined
+  WarningOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
 
 // 导入页面组件
@@ -30,6 +31,7 @@ import ShareCodeManagement from './pages/ShareCodeManagement';
 import SocialShareReview from './pages/SocialShareReview';
 import Dashboard from './pages/Dashboard';
 import ModelErrorDashboard from './pages/ModelErrorDashboard';
+import OracleChat from './pages/OracleChat';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
@@ -88,6 +90,11 @@ const menuItems = [
     key: '/model-errors',
     icon: <WarningOutlined />,
     label: <Link to="/model-errors">模型错误看板</Link>
+  },
+  {
+    key: '/oracle-chat',
+    icon: <MessageOutlined />,
+    label: <Link to="/oracle-chat">Oracle 聊天</Link>
   }
 ];
 
@@ -240,6 +247,11 @@ function MainLayout() {
               <Route path="/model-errors" element={
                 <ProtectedRoute>
                   <ModelErrorDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/oracle-chat" element={
+                <ProtectedRoute>
+                  <OracleChat />
                 </ProtectedRoute>
               } />
             </Routes>

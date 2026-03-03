@@ -104,4 +104,19 @@ export const API_ENDPOINTS = {
   
   // Dashboard数据看板相关
   DASHBOARD_STATS: '/api/v1/dashboard/stats',
-} as const; 
+
+  // Oracle AI 聊天相关
+  ORACLE_CONVERSATIONS: '/api/v1/oracle/conversations',
+  ORACLE_CONVERSATION_MESSAGES: (id: string) => `/api/v1/oracle/conversations/${id}/messages`,
+  ORACLE_CHAT: '/api/v1/oracle/chat',
+} as const;
+
+/**
+ * 工作台请求 Oracle 接口时使用的请求头
+ * 后端通过 X-Dev-Mode + X-Dev-Token 识别为开发模式，使用固定测试用户，无需 JWT
+ */
+export const getOracleApiHeaders = (): Record<string, string> => ({
+  'Content-Type': 'application/json',
+  'X-Dev-Mode': 'true',
+  'X-Dev-Token': 'dev-secret-2024',
+}); 

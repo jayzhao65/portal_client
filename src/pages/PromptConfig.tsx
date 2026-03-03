@@ -50,18 +50,20 @@ interface PromptConfig {
   created_at: string;
   updated_at: string;
   response_format?: any | null;  // 结构化输出配置（JSON Schema）
+  tools?: any;  // Oracle 等阶段：function calling 工具定义（JSONB 数组）
 }
 
-// 阶段名称定义
+// 阶段名称定义（后端 stage_name 与展示一致；oracle_system 为 Oracle 聊天用；oracle_title_generator 为会话标题生成）
 const STAGE_NAMES = [
   "问题验证",
-  "扩写/位置生成", 
   "现状分析",
   "占卜解读",
   "追问",
   "每日指引追问",
   "图片识别",
-  "图片占卜解读"
+  "图片占卜解读",
+  "oracle_system",           // Oracle AI 聊天系统提示词 + 工具定义
+  "oracle_title_generator"   // Oracle 会话标题生成器
 ];
 
 // 阶段占位符定义
@@ -69,11 +71,6 @@ const STAGE_PLACEHOLDERS = {
   "问题验证": [
     {key: "{user_tags}", description: "用户标签"},
     {key: "{question}", description: "用户问题"}
-  ],
-  "扩写/位置生成": [
-    {key: "{reading_id}", description: "Reading记录ID"},
-    {key: "{question}", description: "用户问题"},
-    {key: "{user_tags}", description: "用户标签"}
   ],
   "现状分析": [
     {key: "{reading_id}", description: "Reading记录ID"},
@@ -108,7 +105,17 @@ const STAGE_PLACEHOLDERS = {
     {key: "{moving_yao_name}", description: "变爻名称"},
     {key: "{moving_yao_position}", description: "变爻位置（1-6）"},
     {key: "{calculation_process}", description: "计算过程描述"}
-  ]
+  ],
+  // Oracle 聊天：无固定占位符，用户命理/人物档案/事实由后端动态注入
+  "oracle_system": [],
+  // Oracle 标题生成器：由后端注入会话消息等上下文
+  "oracle_title_generator": []
+};
+
+// 阶段显示名（列表/卡片标题用）
+const STAGE_DISPLAY_NAMES: Record<string, string> = {
+  oracle_system: "Oracle 系统",
+  oracle_title_generator: "标题生成器"
 };
 
 // Prompt配置管理页面组件
@@ -122,6 +129,7 @@ function PromptConfig() {
   const [viewingConfig, setViewingConfig] = useState<PromptConfig | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [responseFormat, setResponseFormat] = useState<any | null>(null);
+  const [toolsJson, setToolsJson] = useState<string>('');  // Oracle 等阶段的 tools（JSON 字符串）
   const [form] = Form.useForm();
 
   // 获取所有配置
@@ -187,15 +195,18 @@ function PromptConfig() {
     fetchAvailableModels();
   }, []);
 
-  // 新增配置
+  // 新增配置（oracle_system / oracle_title_generator 的 user_prompt 可为空，由后端或上下文注入）
   const handleAdd = (stageName: string) => {
     setEditingConfig(null);
     setResponseFormat(null);
+    setToolsJson(stageName === 'oracle_system' ? '[]' : '');
     setModalVisible(true);
     form.resetFields();
+    const oracleLikeStages = ['oracle_system', 'oracle_title_generator'];
     form.setFieldsValue({
       stage_name: stageName,
       version: `v1.0.0`,
+      user_prompt: oracleLikeStages.includes(stageName) ? '' : undefined,
       model_name: availableModels.length > 0 ? availableModels[0] : undefined
     });
   };
@@ -210,6 +221,7 @@ function PromptConfig() {
   const handleEdit = (config: PromptConfig) => {
     setEditingConfig(config);
     setResponseFormat(config.response_format || null);
+    setToolsJson(config.tools != null ? JSON.stringify(config.tools, null, 2) : '');
     setModalVisible(true);
     
     // 处理config字段，转换为表单需要的嵌套格式
@@ -227,7 +239,7 @@ function PromptConfig() {
       stage_name: config.stage_name,
       version: config.version,
       system_prompt: config.system_prompt,
-      user_prompt: config.user_prompt,
+      user_prompt: config.user_prompt ?? '',
       model_name: config.model_name,
       config: formConfig
     });
@@ -320,17 +332,25 @@ function PromptConfig() {
       
       console.log('🔍 处理后的config:', processedConfig);
       
-      const configData = {
+      const configData: Record<string, unknown> = {
         stage_name: values.stage_name,
         version: values.version,
         system_prompt: values.system_prompt,
-        user_prompt: values.user_prompt,
+        user_prompt: values.user_prompt ?? '',
         placeholders: processedPlaceholders,
         model_name: values.model_name,
         config: processedConfig,
         response_format: responseFormat,
         is_active: false
       };
+      if (values.stage_name === 'oracle_system') {
+        try {
+          configData.tools = toolsJson.trim() ? JSON.parse(toolsJson) : null;
+        } catch {
+          message.error('Tools 不是合法 JSON，请检查后保存');
+          return;
+        }
+      }
       
       console.log('🔍 最终发送给后端的数据:', configData);
 
@@ -392,7 +412,7 @@ function PromptConfig() {
         key={stageName}
         title={
           <Space>
-            <span>{stageName}</span>
+            <span>{STAGE_DISPLAY_NAMES[stageName] ?? stageName}</span>
             {activeConfig ? (
               <Badge 
                 status="success" 
@@ -586,7 +606,7 @@ function PromptConfig() {
               >
                 <Select placeholder="选择阶段名称">
                   {STAGE_NAMES.map(name => (
-                    <Option key={name} value={name}>{name}</Option>
+                    <Option key={name} value={name}>{STAGE_DISPLAY_NAMES[name] ?? name}</Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -705,13 +725,39 @@ function PromptConfig() {
           <Form.Item
             name="user_prompt"
             label="User Prompt"
-            rules={[{ required: true, message: '请输入User Prompt' }]}
+            rules={[
+              {
+                validator: (_, value) => {
+                  const stage = form.getFieldValue('stage_name');
+                  const optionalUserPromptStages = ['oracle_system', 'oracle_title_generator'];
+                  if (!optionalUserPromptStages.includes(stage) && !(value && value.trim())) {
+                    return Promise.reject(new Error('请输入User Prompt'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
             <TextArea 
-              rows={6} 
-              placeholder="输入用户提示词模板..."
+              rows={['oracle_system', 'oracle_title_generator'].includes(form.getFieldValue('stage_name')) ? 2 : 6} 
+              placeholder={form.getFieldValue('stage_name') === 'oracle_system' ? 'Oracle 模式下可为空，消息由聊天接口传入' : form.getFieldValue('stage_name') === 'oracle_title_generator' ? '标题生成器可为空，上下文由后端注入' : '输入用户提示词模板...'}
             />
           </Form.Item>
+
+          {form.getFieldValue('stage_name') === 'oracle_system' && (
+            <Form.Item
+              label="Tools（function calling 定义，JSON 数组）"
+              tooltip="OpenAI 格式的工具定义数组，用于 Oracle 聊天时的工具调用"
+            >
+              <TextArea
+                value={toolsJson}
+                onChange={(e) => setToolsJson(e.target.value)}
+                rows={12}
+                placeholder='[{"type":"function","function":{"name":"xxx","description":"...","parameters":{...}}}]'
+                style={{ fontFamily: 'monospace', fontSize: 12 }}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             label="占位符说明"
@@ -825,9 +871,27 @@ function PromptConfig() {
                 marginTop: '8px',
                 whiteSpace: 'pre-wrap'
               }}>
-                {viewingConfig.user_prompt}
+                {viewingConfig.user_prompt || '(空)'}
               </div>
             </div>
+            {(viewingConfig.stage_name === 'oracle_system' || viewingConfig.tools != null) && (
+              <>
+                <Divider />
+                <div>
+                  <Text strong>Tools（function calling）:</Text>
+                  <pre style={{ 
+                    padding: '12px', 
+                    background: '#f5f5f5', 
+                    borderRadius: '6px',
+                    marginTop: '8px',
+                    whiteSpace: 'pre-wrap',
+                    fontSize: 12
+                  }}>
+                    {viewingConfig.tools != null ? JSON.stringify(viewingConfig.tools, null, 2) : '(未配置)'}
+                  </pre>
+                </div>
+              </>
+            )}
             <Divider />
             <div>
               <Text strong>占位符:</Text>
