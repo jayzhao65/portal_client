@@ -20,7 +20,8 @@ const getApiBaseUrl = (): string => {
     protocol = 'https';
   }
   
-  const defaultUrl = `${protocol}://test.yilore.lichen.xin`;
+  // 测试服已启用 HTTPS，统一用 https
+  const defaultUrl = `https://test.yilore.lichen.xin`;
   const finalUrl = envUrl || defaultUrl;
   
   console.log('🔧 生产环境API配置:', {

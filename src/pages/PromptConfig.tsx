@@ -62,8 +62,9 @@ const STAGE_NAMES = [
   "每日指引追问",
   "图片识别",
   "图片占卜解读",
-  "oracle_system",           // Oracle AI 聊天系统提示词 + 工具定义
-  "oracle_title_generator"   // Oracle 会话标题生成器
+  "oracle_system",                        // Oracle AI 聊天系统提示词 + 工具定义
+  "oracle_title_generator",               // Oracle 会话标题生成器
+  "oracle_conversation_window_summary"    // 每累计 5 条 user 消息由后端后台触发一次、单独非流式 AI 调用
 ];
 
 // 阶段占位符定义
@@ -109,13 +110,19 @@ const STAGE_PLACEHOLDERS = {
   // Oracle 聊天：无固定占位符，用户命理/人物档案/事实由后端动态注入
   "oracle_system": [],
   // Oracle 标题生成器：由后端注入会话消息等上下文
-  "oracle_title_generator": []
+  "oracle_title_generator": [],
+  // Oracle 五轮窗口总结：后端将最近 5 条 user 消息窗口与已有事实替换进 user_prompt
+  "oracle_conversation_window_summary": [
+    {key: "{transcript}", description: "最近 5 条 user 消息覆盖的完整对话片段（含 assistant 回复）"},
+    {key: "{existing_facts}", description: "本会话已记录的话题历程事实列表（防重复）"}
+  ]
 };
 
 // 阶段显示名（列表/卡片标题用）
 const STAGE_DISPLAY_NAMES: Record<string, string> = {
   oracle_system: "Oracle 系统",
-  oracle_title_generator: "标题生成器"
+  oracle_title_generator: "标题生成器",
+  oracle_conversation_window_summary: "Oracle 五轮话题总结"
 };
 
 // Prompt配置管理页面组件
@@ -202,7 +209,7 @@ function PromptConfig() {
     setToolsJson(stageName === 'oracle_system' ? '[]' : '');
     setModalVisible(true);
     form.resetFields();
-    const oracleLikeStages = ['oracle_system', 'oracle_title_generator'];
+    const oracleLikeStages = ['oracle_system', 'oracle_title_generator', 'oracle_conversation_window_summary'];
     form.setFieldsValue({
       stage_name: stageName,
       version: `v1.0.0`,
@@ -729,7 +736,7 @@ function PromptConfig() {
               {
                 validator: (_, value) => {
                   const stage = form.getFieldValue('stage_name');
-                  const optionalUserPromptStages = ['oracle_system', 'oracle_title_generator'];
+                  const optionalUserPromptStages = ['oracle_system', 'oracle_title_generator', 'oracle_conversation_window_summary'];
                   if (!optionalUserPromptStages.includes(stage) && !(value && value.trim())) {
                     return Promise.reject(new Error('请输入User Prompt'));
                   }
@@ -739,8 +746,13 @@ function PromptConfig() {
             ]}
           >
             <TextArea 
-              rows={['oracle_system', 'oracle_title_generator'].includes(form.getFieldValue('stage_name')) ? 2 : 6} 
-              placeholder={form.getFieldValue('stage_name') === 'oracle_system' ? 'Oracle 模式下可为空，消息由聊天接口传入' : form.getFieldValue('stage_name') === 'oracle_title_generator' ? '标题生成器可为空，上下文由后端注入' : '输入用户提示词模板...'}
+              rows={['oracle_system', 'oracle_title_generator', 'oracle_conversation_window_summary'].includes(form.getFieldValue('stage_name')) ? 2 : 6} 
+              placeholder={
+                form.getFieldValue('stage_name') === 'oracle_system' ? 'Oracle 模式下可为空，消息由聊天接口传入' :
+                form.getFieldValue('stage_name') === 'oracle_title_generator' ? '标题生成器可为空，上下文由后端注入' :
+                form.getFieldValue('stage_name') === 'oracle_conversation_window_summary' ? '可为空，{transcript} 与 {existing_facts} 由后端替换后传入' :
+                '输入用户提示词模板...'
+              }
             />
           </Form.Item>
 

@@ -30,11 +30,15 @@ const { TextArea } = Input;
 const { Option } = Select;
 const { Text } = Typography;
 
-// Oracle 的 stage_name：主聊天 + 标题生成器（事实抽取器已移至后台，不在此配置）
+// Oracle 的 stage_name：主聊天 + 标题生成器 + 五轮窗口总结（事实抽取器等不在此页配置）
 // 与后端 oracle_service.py / oracle_background_service.py 中的常量一致
 const ORACLE_STAGES = [
   { key: 'oracle_system', label: '主聊天 Prompt' },
   { key: 'oracle_title_generator', label: '标题生成器' },
+  {
+    key: 'oracle_conversation_window_summary',
+    label: '五轮话题总结',
+  },
 ] as const;
 
 type OracleStageKey = typeof ORACLE_STAGES[number]['key'];
@@ -103,7 +107,7 @@ export default function OracleChat() {
   // 按当前选中的 stage 过滤出的配置列表
   const oracleConfigs = allOracleConfigs.filter((c) => c.stage_name === activeStage);
 
-  // 拉取所有 Oracle 相关的 Prompt 配置（三个 stage 一起拉）
+  // 拉取所有 Oracle 相关的 Prompt 配置（ORACLE_STAGES 中的 stage 一起拉）
   const fetchOracleConfigs = async () => {
     setLoadingOracleConfigs(true);
     try {
@@ -160,13 +164,21 @@ export default function OracleChat() {
       message.error('没有可保存的配置');
       return;
     }
-    let toolsParsed: unknown = editingConfig.tools;
-    if (typeof editingConfig.tools === 'string') {
-      try {
-        toolsParsed = JSON.parse(editingConfig.tools as string);
-      } catch {
-        message.error('Tools 不是合法 JSON，请检查后重试');
-        return;
+    let toolsParsed: unknown = null;
+    if (activeStage === 'oracle_system') {
+      toolsParsed = editingConfig.tools;
+      if (typeof editingConfig.tools === 'string') {
+        const raw = (editingConfig.tools as string).trim();
+        if (!raw) {
+          toolsParsed = null;
+        } else {
+          try {
+            toolsParsed = JSON.parse(editingConfig.tools as string);
+          } catch {
+            message.error('Tools 不是合法 JSON，请检查后重试');
+            return;
+          }
+        }
       }
     }
     try {
@@ -392,6 +404,13 @@ export default function OracleChat() {
               onChange={(val) => setActiveStage(val as OracleStageKey)}
               options={ORACLE_STAGES.map((s) => ({ label: s.label, value: s.key }))}
             />
+            {activeStage === 'oracle_conversation_window_summary' && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                每累计 5 条用户消息后由后台单独调用一次 AI；User Prompt 支持占位符{' '}
+                <Text code>{'{transcript}'}</Text> 与 <Text code>{'{existing_facts}'}</Text>
+                （与仓库 <Text code>insert_oracle_window_summary_prompt.sql</Text> 示例一致）。
+              </Text>
+            )}
           </Space>
         }
         size="small"
@@ -491,22 +510,24 @@ export default function OracleChat() {
                     style={{ marginTop: 8 }}
                   />
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>Tools (JSON，function calling 定义):</Text>
-                  <TextArea
-                    value={
-                      typeof editingConfig.tools === 'string'
-                        ? editingConfig.tools
-                        : editingConfig.tools != null
-                          ? JSON.stringify(editingConfig.tools, null, 2)
-                          : ''
-                    }
-                    onChange={(e) => setEditingConfig((prev) => (prev ? { ...prev, tools: e.target.value } : null))}
-                    rows={6}
-                    style={{ marginTop: 8, fontFamily: 'monospace', fontSize: 12 }}
-                    placeholder='[{"type":"function","function":{...}}]'
-                  />
-                </div>
+                {activeStage === 'oracle_system' && (
+                  <div style={{ marginBottom: 12 }}>
+                    <Text strong>Tools (JSON，function calling 定义):</Text>
+                    <TextArea
+                      value={
+                        typeof editingConfig.tools === 'string'
+                          ? editingConfig.tools
+                          : editingConfig.tools != null
+                            ? JSON.stringify(editingConfig.tools, null, 2)
+                            : ''
+                      }
+                      onChange={(e) => setEditingConfig((prev) => (prev ? { ...prev, tools: e.target.value } : null))}
+                      rows={6}
+                      style={{ marginTop: 8, fontFamily: 'monospace', fontSize: 12 }}
+                      placeholder='[{"type":"function","function":{...}}]'
+                    />
+                  </div>
+                )}
                 <Row gutter={[16, 8]}>
                   <Col span={12}>
                     <Text strong>模型:</Text>
