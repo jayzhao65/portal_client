@@ -33,7 +33,8 @@ const { Text } = Typography;
 // Oracle 的 stage_name：主聊天 + 标题生成器 + 五轮窗口总结（事实抽取器等不在此页配置）
 // 与后端 oracle_service.py / oracle_background_service.py 中的常量一致
 const ORACLE_STAGES = [
-  { key: 'oracle_system', label: '主聊天 Prompt' },
+  { key: 'oracle_system', label: '主聊天 Prompt（App）' },
+  { key: 'oracle_system_web', label: '主聊天 Prompt（网页）' },
   { key: 'oracle_title_generator', label: '标题生成器' },
   {
     key: 'oracle_conversation_window_summary',
@@ -42,6 +43,9 @@ const ORACLE_STAGES = [
 ] as const;
 
 type OracleStageKey = typeof ORACLE_STAGES[number]['key'];
+
+/** 主聊天阶段（App / 网页）：含 tools 编辑 */
+const ORACLE_MAIN_CHAT_STAGES: OracleStageKey[] = ['oracle_system', 'oracle_system_web'];
 
 // 提示词配置类型（与 prompt_configs 表一致）
 interface OraclePromptConfig {
@@ -165,7 +169,7 @@ export default function OracleChat() {
       return;
     }
     let toolsParsed: unknown = null;
-    if (activeStage === 'oracle_system') {
+    if (ORACLE_MAIN_CHAT_STAGES.includes(activeStage)) {
       toolsParsed = editingConfig.tools;
       if (typeof editingConfig.tools === 'string') {
         const raw = (editingConfig.tools as string).trim();
@@ -510,7 +514,7 @@ export default function OracleChat() {
                     style={{ marginTop: 8 }}
                   />
                 </div>
-                {activeStage === 'oracle_system' && (
+                {ORACLE_MAIN_CHAT_STAGES.includes(activeStage) && (
                   <div style={{ marginBottom: 12 }}>
                     <Text strong>Tools (JSON，function calling 定义):</Text>
                     <TextArea

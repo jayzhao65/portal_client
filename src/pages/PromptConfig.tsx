@@ -40,9 +40,9 @@ const { Option } = Select;
 interface PromptConfig {
   id: string;
   stage_name: string;
-  system_prompt: string;
-  user_prompt: string;
-  placeholders: Array<{key: string; description: string}>;
+  system_prompt?: string;
+  user_prompt?: string;
+  placeholders?: Array<{key: string; description: string}>;
   model_name: string;
   config: any;
   version: string;
@@ -64,6 +64,7 @@ const STAGE_NAMES = [
   "图片识别",
   "图片占卜解读",
   "oracle_system",                        // Oracle AI 聊天系统提示词 + 工具定义
+  "oracle_system_web",                   // 网页端 Oracle（工具集与 App 不同，需 X-Yilore-Client-Platform: web 路由，见后端）
   "oracle_system_legacy",                // 老客户端 Oracle 主 prompt
   "oracle_title_generator",               // Oracle 会话标题生成器
   "oracle_conversation_window_summary",   // 每累计 5 条 user 消息由后端后台触发一次、单独非流式 AI 调用
@@ -115,6 +116,12 @@ const STAGE_PLACEHOLDERS = {
   ],
   // Oracle 聊天：无固定占位符，用户命理/人物档案/事实由后端动态注入
   "oracle_system": [],
+  "oracle_system_web": [
+    {key: "{user_profile}", description: "用户命理信息（后端注入）"},
+    {key: "{related_persons}", description: "关联人物档案"},
+    {key: "{active_facts}", description: "会话事实记忆"},
+    {key: "{related_reports}", description: "关联解读报告"}
+  ],
   "oracle_system_legacy": [],
   // Oracle 标题生成器：由后端注入会话消息等上下文
   "oracle_title_generator": [],
@@ -129,6 +136,7 @@ const STAGE_PLACEHOLDERS = {
 const STAGE_DISPLAY_NAMES: Record<string, string> = {
   "问题验证_legacy": "问题验证（老客户端）",
   oracle_system: "Oracle 系统",
+  oracle_system_web: "Oracle 系统（网页端）",
   oracle_system_legacy: "Oracle 系统（老客户端）",
   oracle_title_generator: "标题生成器",
   oracle_conversation_window_summary: "Oracle 五轮话题总结"
@@ -136,11 +144,12 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
 
 /** 与主 oracle_system 共用 Tools 编辑、可选 user_prompt 等逻辑 */
 function isOracleSystemStage(stage: string | undefined | null): boolean {
-  return stage === "oracle_system" || stage === "oracle_system_legacy";
+  return stage === "oracle_system" || stage === "oracle_system_web" || stage === "oracle_system_legacy";
 }
 
 const ORACLE_LIKE_OPTIONAL_USER_PROMPT_STAGES = [
   "oracle_system",
+  "oracle_system_web",
   "oracle_system_legacy",
   "oracle_title_generator",
   "oracle_conversation_window_summary",
@@ -159,17 +168,70 @@ function PromptConfig() {
   const [responseFormat, setResponseFormat] = useState<any | null>(null);
   const [toolsJson, setToolsJson] = useState<string>('');  // Oracle 等阶段的 tools（JSON 字符串）
   const [form] = Form.useForm();
+  const DEV_HEADERS = {
+    'X-Dev-Mode': 'true',
+    'X-Dev-Token': 'dev-secret-2024'
+  };
+
+  // 统一将后端返回结构补齐，避免字段缺失导致列表渲染异常
+  const normalizePromptConfig = (item: any): PromptConfig => ({
+    id: item?.id ?? '',
+    stage_name: item?.stage_name ?? '',
+    system_prompt: item?.system_prompt ?? '',
+    user_prompt: item?.user_prompt ?? '',
+    placeholders: Array.isArray(item?.placeholders) ? item.placeholders : [],
+    model_name: item?.model_name ?? '',
+    config: item?.config ?? {},
+    version: item?.version ?? '',
+    is_active: Boolean(item?.is_active),
+    created_at: item?.created_at ?? new Date().toISOString(),
+    updated_at: item?.updated_at ?? new Date().toISOString(),
+    response_format: item?.response_format ?? null,
+    tools: item?.tools ?? null,
+  });
+
+  // 当全量接口传输中断时，按阶段分批拉取，降低单次响应体积
+  const fetchConfigsByStageFallback = async (): Promise<PromptConfig[]> => {
+    const stagesRes = await fetch(createApiUrl('/api/v1/prompt-configs/stages'), {
+      headers: DEV_HEADERS
+    });
+    if (!stagesRes.ok) {
+      throw new Error(`获取阶段列表失败: ${stagesRes.status}`);
+    }
+    const stagesJson = await stagesRes.json();
+    const stageNames: string[] = Array.isArray(stagesJson?.data) ? stagesJson.data : [];
+    if (stageNames.length === 0) {
+      return [];
+    }
+
+    const perStageResults = await Promise.all(
+      stageNames.map(async (stageName) => {
+        const stageRes = await fetch(
+          createApiUrl(`/api/v1/prompt-configs/stage/${encodeURIComponent(stageName)}`),
+          { headers: DEV_HEADERS }
+        );
+        if (!stageRes.ok) {
+          console.warn(`阶段 ${stageName} 拉取失败:`, stageRes.status);
+          return [] as PromptConfig[];
+        }
+        const stageJson = await stageRes.json();
+        const list = Array.isArray(stageJson?.data) ? stageJson.data : [];
+        return list.map(normalizePromptConfig);
+      })
+    );
+
+    return perStageResults.flat();
+  };
 
   // 获取所有配置
   const fetchConfigs = async () => {
     setLoading(true);
     try {
-      const response = await fetch(createApiUrl(API_ENDPOINTS.PROMPT_CONFIGS), {
-        headers: {
-          'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
-        }
-      });
+      // 列表页只取摘要，避免大 prompt 传输中断；编辑时再按 id 拉取完整内容
+      const response = await fetch(
+        createApiUrl(`${API_ENDPOINTS.PROMPT_CONFIGS}?summary=true`),
+        { headers: DEV_HEADERS }
+      );
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -180,26 +242,55 @@ function PromptConfig() {
       
       const data = await response.json();
       if (data.success) {
-        setConfigs(data.data || []);
-        message.success(`成功获取 ${data.data?.length || 0} 个配置`);
+        const normalized = (Array.isArray(data.data) ? data.data : []).map(normalizePromptConfig);
+        setConfigs(normalized);
       } else {
         message.error(data.message || '获取配置失败');
       }
     } catch (error) {
       console.error('获取配置出错:', error);
-      message.error(`获取配置失败: ${error}`);
+      try {
+        const fallbackConfigs = await fetchConfigsByStageFallback();
+        setConfigs(fallbackConfigs);
+        message.warning('全量接口不稳定，已切换为分阶段加载（可正常查看/编辑）');
+      } catch (fallbackError) {
+        console.error('分阶段加载也失败:', fallbackError);
+        message.error(`获取配置失败: ${fallbackError}`);
+      }
     }
     setLoading(false);
+  };
+
+  // 按 ID 拉取完整配置（包含 system_prompt/user_prompt/tools），用于查看和编辑
+  const fetchConfigDetail = async (id: string): Promise<PromptConfig | null> => {
+    try {
+      const response = await fetch(createApiUrl(API_ENDPOINTS.PROMPT_CONFIG_BY_ID(id)), {
+        headers: DEV_HEADERS
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('获取配置详情失败:', response.status, errorText);
+        message.error(`获取配置详情失败: ${response.status}`);
+        return null;
+      }
+      const data = await response.json();
+      if (!data.success || !data.data) {
+        message.error(data.message || '获取配置详情失败');
+        return null;
+      }
+      return data.data as PromptConfig;
+    } catch (error) {
+      console.error('获取配置详情出错:', error);
+      message.error(`获取配置详情失败: ${error}`);
+      return null;
+    }
   };
 
   // 获取可用模型列表
   const fetchAvailableModels = async () => {
     try {
       const response = await fetch(createApiUrl(API_ENDPOINTS.PROMPT_CONFIG_MODELS), {
-        headers: {
-          'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
-        }
+        headers: DEV_HEADERS
       });
       
       if (response.ok) {
@@ -240,35 +331,40 @@ function PromptConfig() {
   };
 
   // 查看配置
-  const handleView = (config: PromptConfig) => {
-    setViewingConfig(config);
+  const handleView = async (config: PromptConfig) => {
+    const detail = await fetchConfigDetail(config.id);
+    if (!detail) return;
+    setViewingConfig(detail);
     setViewModalVisible(true);
   };
 
   // 编辑配置
-  const handleEdit = (config: PromptConfig) => {
-    setEditingConfig(config);
-    setResponseFormat(config.response_format || null);
-    setToolsJson(config.tools != null ? JSON.stringify(config.tools, null, 2) : '');
+  const handleEdit = async (config: PromptConfig) => {
+    const detail = await fetchConfigDetail(config.id);
+    if (!detail) return;
+
+    setEditingConfig(detail);
+    setResponseFormat(detail.response_format || null);
+    setToolsJson(detail.tools != null ? JSON.stringify(detail.tools, null, 2) : '');
     setModalVisible(true);
     
     // 处理config字段，转换为表单需要的嵌套格式
     let formConfig = {};
-    if (config.config && typeof config.config === 'object') {
-      if (config.config.max_tokens !== undefined) {
-        formConfig = { ...formConfig, max_tokens: config.config.max_tokens };
+    if (detail.config && typeof detail.config === 'object') {
+      if (detail.config.max_tokens !== undefined) {
+        formConfig = { ...formConfig, max_tokens: detail.config.max_tokens };
       }
-      if (config.config.temperature !== undefined) {
-        formConfig = { ...formConfig, temperature: config.config.temperature };
+      if (detail.config.temperature !== undefined) {
+        formConfig = { ...formConfig, temperature: detail.config.temperature };
       }
     }
     
     form.setFieldsValue({
-      stage_name: config.stage_name,
-      version: config.version,
-      system_prompt: config.system_prompt,
-      user_prompt: config.user_prompt ?? '',
-      model_name: config.model_name,
+      stage_name: detail.stage_name,
+      version: detail.version,
+      system_prompt: detail.system_prompt ?? '',
+      user_prompt: detail.user_prompt ?? '',
+      model_name: detail.model_name,
       config: formConfig
     });
     
@@ -277,11 +373,11 @@ function PromptConfig() {
       const maxTokensInput = document.getElementById('max_tokens_input') as HTMLInputElement;
       const temperatureInput = document.getElementById('temperature_input') as HTMLInputElement;
       
-      if (maxTokensInput && config.config?.max_tokens !== undefined) {
-        maxTokensInput.value = config.config.max_tokens.toString();
+      if (maxTokensInput && detail.config?.max_tokens !== undefined) {
+        maxTokensInput.value = detail.config.max_tokens.toString();
       }
-      if (temperatureInput && config.config?.temperature !== undefined) {
-        temperatureInput.value = config.config.temperature.toString();
+      if (temperatureInput && detail.config?.temperature !== undefined) {
+        temperatureInput.value = detail.config.temperature.toString();
       }
     }, 100);
   };
@@ -291,10 +387,7 @@ function PromptConfig() {
     try {
       const response = await fetch(createApiUrl(API_ENDPOINTS.PROMPT_CONFIG_BY_ID(id)), { 
         method: 'DELETE',
-        headers: {
-          'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
-        }
+        headers: DEV_HEADERS
       });
       
       if (response.ok) {
@@ -314,10 +407,7 @@ function PromptConfig() {
     try {
       const response = await fetch(createApiUrl(API_ENDPOINTS.PROMPT_CONFIG_ACTIVATE(id)), { 
         method: 'POST',
-        headers: {
-          'X-Dev-Mode': 'true',
-          'X-Dev-Token': 'dev-secret-2024'
-        }
+        headers: DEV_HEADERS
       });
       
       if (response.ok) {
@@ -520,7 +610,14 @@ function PromptConfig() {
                     <Button 
                       type="text" 
                       icon={<EyeOutlined />}
-                      onClick={() => handleView(config)}
+                      onClick={() => void handleView(config)}
+                    />
+                  </Tooltip>,
+                  <Tooltip title="编辑配置">
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => void handleEdit(config)}
                     />
                   </Tooltip>,
                   config.is_active ? (
