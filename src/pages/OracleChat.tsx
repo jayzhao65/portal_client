@@ -35,6 +35,7 @@ const { Text } = Typography;
 const ORACLE_STAGES = [
   { key: 'oracle_system', label: '主聊天 Prompt（App）' },
   { key: 'oracle_system_web', label: '主聊天 Prompt（网页）' },
+  { key: 'oracle_system_android', label: '主聊天 Prompt（Android）' },
   { key: 'oracle_title_generator', label: '标题生成器' },
   {
     key: 'oracle_conversation_window_summary',
@@ -45,7 +46,11 @@ const ORACLE_STAGES = [
 type OracleStageKey = typeof ORACLE_STAGES[number]['key'];
 
 /** 主聊天阶段（App / 网页）：含 tools 编辑 */
-const ORACLE_MAIN_CHAT_STAGES: OracleStageKey[] = ['oracle_system', 'oracle_system_web'];
+const ORACLE_MAIN_CHAT_STAGES: OracleStageKey[] = [
+  'oracle_system',
+  'oracle_system_web',
+  'oracle_system_android',
+];
 
 // 提示词配置类型（与 prompt_configs 表一致）
 interface OraclePromptConfig {

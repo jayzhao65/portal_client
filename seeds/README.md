@@ -12,7 +12,14 @@
 2. 点 **新增**，`model_name` / `config` 与当前激活的 **Oracle 系统（App）** 保持一致
 3. 从本 JSON 复制 `system_prompt`、`tools` 到表单（或整段 Tools JSON）
 4. 模板已去掉 `trigger_picture_divination`（观物）、`trigger_add_person`（AI 建档），并写好网页端说明；确认后保存并 **激活**
-5. 后端需实现 `X-Yilore-Client-Platform: web` → 读取 `oracle_system_web`（尚未接路由时，仅能在门户里编辑存库）
+5. 后端：`X-Yilore-Client-Platform: web` → `oracle_system_web`
+
+## `oracle_system_android`（数据库种子）
+
+- **SQL**：`yilore_sever/database/insert_oracle_system_android.sql`（从当前激活的 `oracle_system` 整份复制）
+- **`stage_name`**：`oracle_system_android`（Android 专用，默认 `is_active: false`）
+- **生效**：后端 `X-Yilore-Client-Platform: android`；Android App OkHttp 拦截器已带该头
+- 门户阶段：**Oracle 系统（Android）**；可与 App 主 prompt 分叉维护，初始内容与 iOS 一致
 
 ### 字段说明
 

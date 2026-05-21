@@ -64,7 +64,8 @@ const STAGE_NAMES = [
   "图片识别",
   "图片占卜解读",
   "oracle_system",                        // Oracle AI 聊天系统提示词 + 工具定义
-  "oracle_system_web",                   // 网页端 Oracle（工具集与 App 不同，需 X-Yilore-Client-Platform: web 路由，见后端）
+  "oracle_system_web",                   // 网页端 Oracle（X-Yilore-Client-Platform: web）
+  "oracle_system_android",               // Android Oracle（X-Yilore-Client-Platform: android）
   "oracle_system_legacy",                // 老客户端 Oracle 主 prompt
   "oracle_title_generator",               // Oracle 会话标题生成器
   "oracle_conversation_window_summary",   // 每累计 5 条 user 消息由后端后台触发一次、单独非流式 AI 调用
@@ -122,6 +123,12 @@ const STAGE_PLACEHOLDERS = {
     {key: "{active_facts}", description: "会话事实记忆"},
     {key: "{related_reports}", description: "关联解读报告"}
   ],
+  "oracle_system_android": [
+    {key: "{user_profile}", description: "用户命理信息（后端注入）"},
+    {key: "{related_persons}", description: "关联人物档案"},
+    {key: "{active_facts}", description: "会话事实记忆"},
+    {key: "{related_reports}", description: "关联解读报告"}
+  ],
   "oracle_system_legacy": [],
   // Oracle 标题生成器：由后端注入会话消息等上下文
   "oracle_title_generator": [],
@@ -137,6 +144,7 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
   "问题验证_legacy": "问题验证（老客户端）",
   oracle_system: "Oracle 系统",
   oracle_system_web: "Oracle 系统（网页端）",
+  oracle_system_android: "Oracle 系统（Android）",
   oracle_system_legacy: "Oracle 系统（老客户端）",
   oracle_title_generator: "标题生成器",
   oracle_conversation_window_summary: "Oracle 五轮话题总结"
@@ -144,12 +152,18 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
 
 /** 与主 oracle_system 共用 Tools 编辑、可选 user_prompt 等逻辑 */
 function isOracleSystemStage(stage: string | undefined | null): boolean {
-  return stage === "oracle_system" || stage === "oracle_system_web" || stage === "oracle_system_legacy";
+  return (
+    stage === "oracle_system" ||
+    stage === "oracle_system_web" ||
+    stage === "oracle_system_android" ||
+    stage === "oracle_system_legacy"
+  );
 }
 
 const ORACLE_LIKE_OPTIONAL_USER_PROMPT_STAGES = [
   "oracle_system",
   "oracle_system_web",
+  "oracle_system_android",
   "oracle_system_legacy",
   "oracle_title_generator",
   "oracle_conversation_window_summary",
