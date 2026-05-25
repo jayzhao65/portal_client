@@ -86,8 +86,9 @@ const STAGE_PLACEHOLDERS = {
     {key: "{divination_result}", description: "占卜结果"}
   ],
   "占卜解读": [
-    {key: "{reading_id}", description: "Reading记录ID"},
-    {key: "{situation_analysis}", description: "现状分析结果"}
+    {key: "{final_question}", description: "最终问题（优先 final_question，否则 question）"},
+    {key: "{situation_analysis}", description: "现状分析正文（不含 possible_rebuttals）"},
+    {key: "{historical_contexts}", description: "历史相似占卜上下文（JSON，由 answer_service 注入）"}
   ],
   "追问": [
     {key: "{reading_id}", description: "Reading记录ID"},
